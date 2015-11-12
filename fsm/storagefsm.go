@@ -51,3 +51,36 @@ type StorageSnapshot struct {
 	logs     [][]byte
 	maxIndex int
 }
+
+func (s *StorageSnapshot) Persist(sink raft.SnapshotSink) error {
+	logger.Info("Excute StorageSnapshot.Persist ... ")
+
+	hd := codec.MsgpackHandle{}
+	enc := codec.NewEncoder(sink, &hd)
+	logger.Info(len(s.logs))
+
+	if err := enc.Encode(s.logs[:s.maxIndex]); err != nil {
+		sink.Close()
+		return err
+	}
+
+	logger.Info(len(s.logs))
+	sink.Close()
+	return nil
+}
+
+func (s *StorageSnapshot) Release() {
+	logger.Info("Excute StorageSnapshot.Release ...")
+}
+
+// Reeturn configurations optimized for in-memeory
+
+func inmemConfig() *raft.Log {
+	conf := raft.DefaultConfig()
+	conf.HeartbeatTimeout = 50 * time.Millisecond
+	conf.ElectionTimeout = 50 * time.Millisecond
+	conf.LeaderLeaseTimeout = 50 * time.Millisecond
+	conf.CommitTimeout = time.Millisecond
+	//conf.Logger = log.New(&testLoggerAdapter, "", 0)
+	return conf
+}
