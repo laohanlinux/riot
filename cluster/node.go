@@ -10,6 +10,7 @@ import (
 )
 
 type node struct {
+	addr   string
 	dir    []string
 	stores *raft.InmemStore
 	fsm    *fsm.StorageFSM
