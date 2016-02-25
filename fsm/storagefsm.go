@@ -15,6 +15,8 @@ import (
 type StorageFSM struct {
 	sync.Mutex
 	logs [][]byte
+
+	cache map[string][]byte
 }
 
 func (s *StorageFSM) Apply(log *raft.Log) interface{} {
