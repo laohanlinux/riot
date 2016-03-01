@@ -1,18 +1,16 @@
 package command
 
-import (
-	"github.com/laohanlinux/riot/fsm"
-)
-
+// ....
 const (
-	cmdGet = "get"
-	cmdSet = "set"
-	cmdDel = "del"
+	CmdGet = "get"
+	CmdSet = "set"
+	CmdDel = "del"
 )
 
-type Comand struct {
-	op      string
-	raftFSM *fsm.StorageFSM
+type Command struct {
+	Op    string
+	Key   string
+	Value []byte
 }
 
 func (cm Comand) doGet(key []byte) []byte {
@@ -24,5 +22,9 @@ func (cm Comand) doSet(key, value []byte) error {
 }
 
 func (cm Comand) doDel(key []byte) error {
+	return nil
+}
+
+func (cm Comand) doInfo() error {
 	return nil
 }

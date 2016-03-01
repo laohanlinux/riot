@@ -2,16 +2,18 @@ package handler
 
 import (
 	"encoding/json"
-	"net/http"
 	"io/ioutil"
+	"net/http"
+
 	log "github.com/laohanlinux/go-logger/logger"
 )
 
+// ...
 const (
-	Op_Error       = 0
-	Net_Error      = 1
-	Internal_Error = 2
-	Invalid_Error = 3
+	OpErr       = 0
+	NetErr      = 1
+	InternalErr = 2
+	InvalidErr  = 3
 )
 
 type msgErrCode struct {
@@ -26,9 +28,11 @@ func (m *msgErrCode) setJson(errCode ...int) []byte {
 	return b
 }
 
+// RiotHandler ...
 type RiotHandler struct {
 }
 
+// ServeHTTP .
 func ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	mErrCode := &msgErrCode{
@@ -46,18 +50,18 @@ func ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Info("RiotHandler receive a request:", r.URL.Path)
 
 	key := r.URL.Path
-	
+
 	if len(key) <= 0 {
 
 	}
-	
-	value, err :=ioutil.ReadAll(r.Body)
-	
+
+	value, err := ioutil.ReadAll(r.Body)
+
 	if err != nil || value == nil {
 		mErrCode.ErrCode = Invalid_Error
 		return
 	}
-	
+
 	log.Info("RiotHandler receive content size:", len(value))
-	
+
 }

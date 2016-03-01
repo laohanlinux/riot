@@ -1,17 +1,19 @@
 package fsm
 
 import (
+	"encoding/json"
 	"io"
 	"sync"
+	"time"
 
 	"github.com/hashicorp/go-msgpack/codec"
 	"github.com/hashicorp/raft"
 	"github.com/laohanlinux/go-logger/logger"
+	"github.com/laohanlinux/riot/command"
 )
 
 // StorageFSM is an implememtation of the FSM interfacec, and just
 // storage the key/value logs sequentially
-
 type StorageFSM struct {
 	sync.Mutex
 	logs [][]byte
@@ -19,11 +21,31 @@ type StorageFSM struct {
 	cache map[string][]byte
 }
 
+// Apply is noly call in out with master leader
+// log format: json
+// {"cmd":op, "key":key, "value": value}
+// TODO
+// use protocol buffer instead of json format
 func (s *StorageFSM) Apply(log *raft.Log) interface{} {
 	s.Lock()
 	defer s.Unlock()
 
 	logger.Info("Excute StorageFSM.Apply ...")
+	var cmdData command.Comand
+	if err := json.Unmarshal(log.Data, &cmdData); err != nil {
+		logger.Fatal(err)
+	}
+
+	switch cmdData.Op {
+	// Get Operation should not in here
+	//case command.CmdGet:
+	case command.CmdSet:
+		s.cache[cmdData.Key] = cmdData.Value
+	case command.CmdDel:
+		delete(s.cache, cmdData.Key)
+	}
+
+	// storage internel cache
 	s.logs = append(s.logs, log.Data)
 	return len(s.logs)
 }
