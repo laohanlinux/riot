@@ -13,18 +13,23 @@ type Command struct {
 	Value []byte
 }
 
-func (cm Comand) doGet(key []byte) []byte {
+// DoGet returns value by specified key
+func (cm Comand) DoGet(key []byte) []byte {
 	return nil
 }
 
-func (cm Comand) doSet(key, value []byte) error {
+func (cm Comand) DoSet(key, value []byte) error {
 	return nil
 }
 
-func (cm Comand) doDel(key []byte) error {
+func (cm Comand) DoDel(key []byte) error {
 	return nil
 }
 
 func (cm Comand) doInfo() error {
 	return nil
+}
+
+func (cm Command) coordinator() {
+
 }

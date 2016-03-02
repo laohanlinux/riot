@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	log "github.com/laohanlinux/go-logger/logger"
+	"github.com/laohanlinux/riot/command"
 )
 
 // ...
@@ -14,6 +15,7 @@ const (
 	NetErr      = 1
 	InternalErr = 2
 	InvalidErr  = 3
+	InvalidKey  = 4
 )
 
 type msgErrCode struct {
@@ -41,7 +43,7 @@ func ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	defer func() {
 		if err := recover(); err != nil {
-			mErrCode.ErrCode = Internal_Error
+			mErrCode.ErrCode = InternalErr
 			w.WriteHeader(500)
 		}
 		w.Write(mErrCode.setJson())
@@ -49,19 +51,40 @@ func ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	log.Info("RiotHandler receive a request:", r.URL.Path)
 
-	key := r.URL.Path
-
-	if len(key) <= 0 {
-
-	}
-
 	value, err := ioutil.ReadAll(r.Body)
 
 	if err != nil || value == nil {
-		mErrCode.ErrCode = Invalid_Error
+		mErrCode.ErrCode = InvalidErr
 		return
 	}
 
-	log.Info("RiotHandler receive content size:", len(value))
+	switch r.Method {
+	case "GET":
+
+	case "DELETE":
+	case "POST":
+	default:
+	}
+
+}
+
+func getValue(w http.ResponseWriter, r *http.Request, mErrCode *msgErrCode) {
+	cmd := command.Command{
+		Op:  command.CmdGet,
+		Key: r.URL.RequestURI(),
+	}
+	if len(cmd.Key) == 0 {
+		mErrCode.ErrCode = InvalidKey
+		return
+	}
+
+	cmd.DoGet()
+}
+
+func setValue(w http.ResponseWriter, r *http.Request) {
+
+}
+
+func delValue(w http.ResponseWriter, r *http.Request) {
 
 }

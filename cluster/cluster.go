@@ -9,6 +9,7 @@ import (
 	"github.com/laohanlinux/riot/fsm"
 )
 
+// Cluster .
 type Cluster interface {
 	//NewCluster(*raft.Config)
 	Join(string) error
@@ -16,6 +17,7 @@ type Cluster interface {
 	Close() error
 	RemoveNode(string) error
 	IsLeader() bool
+	Leader() *raft.Raft
 	LeaderCh() <-chan bool
 	Nodes() ([]string, error)
 }
@@ -23,10 +25,22 @@ type Cluster interface {
 type riotCluster struct {
 	peerAddres []string
 	n          node
+	FSM        *fsm.StorageFSM
 }
 
+var rCluster *riotCluster
+
+// SingleCluster .
+func SingleCluster() *Cluster {
+	return rCluster
+}
+
+// NewCluster ...
 func NewCluster(localAddr string, peerAddres []string, conf *raft.Config) *Cluster {
-	rcluster := riotCluster{
+	if rCluster != nil {
+		return rCluster
+	}
+	rcluster = riotCluster{
 		peerAddres: make([]string, 0),
 	}
 

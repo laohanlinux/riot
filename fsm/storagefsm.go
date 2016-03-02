@@ -2,6 +2,7 @@ package fsm
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"sync"
 	"time"
@@ -16,8 +17,6 @@ import (
 // storage the key/value logs sequentially
 type StorageFSM struct {
 	sync.Mutex
-	logs [][]byte
-
 	cache map[string][]byte
 }
 
@@ -37,74 +36,95 @@ func (s *StorageFSM) Apply(log *raft.Log) interface{} {
 	}
 
 	switch cmdData.Op {
-	// Get Operation should not in here
-	//case command.CmdGet:
 	case command.CmdSet:
 		s.cache[cmdData.Key] = cmdData.Value
 	case command.CmdDel:
 		delete(s.cache, cmdData.Key)
+	default:
+		return fmt.Errorf("%s is a invalid command", cmdData.Op)
 	}
 
-	// storage internel cache
-	s.logs = append(s.logs, log.Data)
-	return len(s.logs)
+	return nil
 }
 
+// Snapshot .
 func (s *StorageFSM) Snapshot() (raft.FSMSnapshot, error) {
 	s.Lock()
 	defer s.Unlock()
 	logger.Info("Excute StorageFSM.Snapshot ...")
-	return &StorageSnapshot{s.logs, len(s.logs)}, nil
+	// return &StorageSnapshot{s.logs, len(s.logs)}, nil
+	return &StorageSnapshot{
+		diskCache: s.cache,
+	}, nil
 }
 
-// restore data from persit location
+// Restore data from persit location
 func (s *StorageFSM) Restore(inp io.ReadCloser) error {
 	logger.Info("Excute StorageFSN.Restore ...")
 	s.Lock()
 	defer s.Unlock()
 	defer inp.Close()
 
+	// hd := codec.MsgpackHandle{}
+	// dec := codec.NewDecoder(inp, &hd)
+
+	// s.logs = nil
+	// return dec.Decode(&s.logs)
+
 	hd := codec.MsgpackHandle{}
 	dec := codec.NewDecoder(inp, &hd)
-
-	s.logs = nil
-	return dec.Decode(&s.logs)
+	s.cache = nil
+	return dec.Decode(&s.cache)
 }
 
+// StorageSnapshot .
 type StorageSnapshot struct {
-	logs     [][]byte
-	maxIndex int
+	// logs     [][]byte
+	// maxIndex int
+	diskCache map[string][]byte
 }
 
+// Persist ...
 func (s *StorageSnapshot) Persist(sink raft.SnapshotSink) error {
 	logger.Info("Excute StorageSnapshot.Persist ... ")
 
+	// hd := codec.MsgpackHandle{}
+	// enc := codec.NewEncoder(sink, &hd)
+	// logger.Info(len(s.logs))
+
+	// if err := enc.Encode(s.logs[:s.maxIndex]); err != nil {
+	// 	sink.Close()
+	// 	return err
+	// }
+
+	// logger.Info(len(s.logs))
+	// sink.Close()
+	// return nil
+
 	hd := codec.MsgpackHandle{}
 	enc := codec.NewEncoder(sink, &hd)
-	logger.Info(len(s.logs))
 
-	if err := enc.Encode(s.logs[:s.maxIndex]); err != nil {
+	if err := enc.Encode(s.diskCache); err != nil {
 		sink.Close()
 		return err
 	}
-
-	logger.Info(len(s.logs))
 	sink.Close()
 	return nil
 }
 
+// Release .
 func (s *StorageSnapshot) Release() {
 	logger.Info("Excute StorageSnapshot.Release ...")
 }
 
-// Reeturn configurations optimized for in-memeory
-
-func inmemConfig() *raft.Log {
+//InmemConfig .
+//configurations optimized for in-memeory
+func InmemConfig() *raft.Log {
 	conf := raft.DefaultConfig()
 	conf.HeartbeatTimeout = 50 * time.Millisecond
 	conf.ElectionTimeout = 50 * time.Millisecond
 	conf.LeaderLeaseTimeout = 50 * time.Millisecond
 	conf.CommitTimeout = time.Millisecond
-	//conf.Logger = log.New(&testLoggerAdapter, "", 0)
+	conf.EnableSingleNode = true
 	return conf
 }
