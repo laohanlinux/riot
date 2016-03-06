@@ -31,10 +31,11 @@ func (rc *RiotRPCClient) RPCRequest(rpcAdrr string, r *OpRequest) (*OpReply, err
 	if !ok {
 		conn, err = grpc.Dial(rpcAdrr, grpc.WithInsecure())
 		if err != nil {
+			rc.l.Unlock()
 			return nil, err
 		}
 	}
-	// do request
+	rc.l.Unlock()
 	client := NewRiotGossipClient(conn)
 	return client.OpRPC(context.Background(), r)
 }
