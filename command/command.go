@@ -1,5 +1,10 @@
 package command
 
+import (
+	"github.com/laohanlinux/riot/cluster"
+	"github.com/laohanlinux/riot/pb"
+)
+
 // ....
 const (
 	CmdGet = "get"
@@ -14,22 +19,34 @@ type Command struct {
 }
 
 // DoGet returns value by specified key
-func (cm Comand) DoGet(key []byte) []byte {
+func (cm Command) DoGet() ([]byte, error) {
+	c := cluster.SingleCluster()
+	return c.Node().Get(cm.Key)
+}
+
+func (cm Command) DoSet() error {
+	c := cluster.SingleCluster()
+	addr := c.Leader().Leader()
+	opRequest := pb.OpRequest{
+		Op:    cm.Op,
+		Key:   cm.Key,
+		Value: cm.Value,
+	}
+	_, err := pb.NewRiotRPCClient().RPCRequest(addr, &opRequest)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
-func (cm Comand) DoSet(key, value []byte) error {
-	return nil
-}
-
-func (cm Comand) DoDel(key []byte) error {
-	return nil
-}
-
-func (cm Comand) doInfo() error {
-	return nil
-}
-
-func (cm Command) coordinator() {
-
+func (cm Command) DoDel() error {
+	c := cluster.SingleCluster()
+	addr := c.Leader().Leader()
+	opRequest := pb.OpRequest{
+		Op:    cm.Op,
+		Key:   cm.Key,
+		Value: cm.Value,
+	}
+	_, err := pb.NewRiotRPCClient().RPCRequest(addr, &opRequest)
+	return err
 }

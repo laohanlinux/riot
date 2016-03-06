@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/go-msgpack/codec"
 	"github.com/hashicorp/raft"
 	"github.com/laohanlinux/go-logger/logger"
-	"github.com/laohanlinux/riot/command"
+	"github.com/laohanlinux/riot/pb"
 )
 
 // StorageFSM is an implememtation of the FSM interfacec, and just
@@ -30,21 +30,32 @@ func (s *StorageFSM) Apply(log *raft.Log) interface{} {
 	defer s.Unlock()
 
 	logger.Info("Excute StorageFSM.Apply ...")
-	var cmdData command.Comand
-	if err := json.Unmarshal(log.Data, &cmdData); err != nil {
+	var req pb.OpRequest
+	if err := json.Unmarshal(log.Data, &req); err != nil {
 		logger.Fatal(err)
 	}
 
-	switch cmdData.Op {
-	case command.CmdSet:
-		s.cache[cmdData.Key] = cmdData.Value
-	case command.CmdDel:
-		delete(s.cache, cmdData.Key)
+	switch req.Op {
+	case "Get":
+		s.cache[req.Key] = req.Value
+	case "SET":
+		delete(s.cache, req.Key)
 	default:
-		return fmt.Errorf("%s is a invalid command", cmdData.Op)
+		return fmt.Errorf("%s is a invalid command", req.Op)
 	}
 
 	return nil
+}
+
+// Get .
+func (s *StorageFSM) Get(key string) ([]byte, error) {
+	s.Lock()
+	defer s.Unlock()
+	value, ok := s.cache[key]
+	if !ok {
+		return nil, fmt.Errorf("not found the %s's value\n", key)
+	}
+	return value, nil
 }
 
 // Snapshot .
@@ -64,13 +75,6 @@ func (s *StorageFSM) Restore(inp io.ReadCloser) error {
 	s.Lock()
 	defer s.Unlock()
 	defer inp.Close()
-
-	// hd := codec.MsgpackHandle{}
-	// dec := codec.NewDecoder(inp, &hd)
-
-	// s.logs = nil
-	// return dec.Decode(&s.logs)
-
 	hd := codec.MsgpackHandle{}
 	dec := codec.NewDecoder(inp, &hd)
 	s.cache = nil
@@ -87,19 +91,6 @@ type StorageSnapshot struct {
 // Persist ...
 func (s *StorageSnapshot) Persist(sink raft.SnapshotSink) error {
 	logger.Info("Excute StorageSnapshot.Persist ... ")
-
-	// hd := codec.MsgpackHandle{}
-	// enc := codec.NewEncoder(sink, &hd)
-	// logger.Info(len(s.logs))
-
-	// if err := enc.Encode(s.logs[:s.maxIndex]); err != nil {
-	// 	sink.Close()
-	// 	return err
-	// }
-
-	// logger.Info(len(s.logs))
-	// sink.Close()
-	// return nil
 
 	hd := codec.MsgpackHandle{}
 	enc := codec.NewEncoder(sink, &hd)
@@ -119,7 +110,7 @@ func (s *StorageSnapshot) Release() {
 
 //InmemConfig .
 //configurations optimized for in-memeory
-func InmemConfig() *raft.Log {
+func InmemConfig() *raft.Config {
 	conf := raft.DefaultConfig()
 	conf.HeartbeatTimeout = 50 * time.Millisecond
 	conf.ElectionTimeout = 50 * time.Millisecond

@@ -2,10 +2,10 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 
-	log "github.com/laohanlinux/go-logger/logger"
 	"github.com/laohanlinux/riot/command"
 )
 
@@ -35,8 +35,7 @@ type RiotHandler struct {
 }
 
 // ServeHTTP .
-func ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
+func (rh *RiotHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	mErrCode := &msgErrCode{
 		ErrCode: 0,
 	}
@@ -49,42 +48,75 @@ func ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.Write(mErrCode.setJson())
 	}()
 
-	log.Info("RiotHandler receive a request:", r.URL.Path)
-
-	value, err := ioutil.ReadAll(r.Body)
-
-	if err != nil || value == nil {
-		mErrCode.ErrCode = InvalidErr
-		return
-	}
-
 	switch r.Method {
 	case "GET":
-
+		errCode, value, err := getValue(w, r)
+		if errCode > 0 {
+			fmt.Printf("%s\n", err)
+		} else {
+			fmt.Printf("value is :%s\n", value)
+		}
+		mErrCode.ErrCode = errCode
 	case "DELETE":
+		errCode, err := delValue(w, r)
+		if err != nil {
+			fmt.Printf("%s\n", err)
+		}
+		mErrCode.ErrCode = errCode
 	case "POST":
+		errCode, err := setValue(w, r)
+		if err != nil {
+			fmt.Printf("%s\n", err)
+		}
+		mErrCode.ErrCode = errCode
 	default:
 	}
 
 }
 
-func getValue(w http.ResponseWriter, r *http.Request, mErrCode *msgErrCode) {
+func getValue(w http.ResponseWriter, r *http.Request) (int, []byte, error) {
 	cmd := command.Command{
 		Op:  command.CmdGet,
 		Key: r.URL.RequestURI(),
 	}
 	if len(cmd.Key) == 0 {
-		mErrCode.ErrCode = InvalidKey
-		return
+		return InvalidKey, nil, fmt.Errorf("The Key is Empty")
 	}
 
-	cmd.DoGet()
+	value, err := cmd.DoGet()
+	if err != nil {
+		return OpErr, value, err
+	}
+	return 0, value, nil
 }
 
-func setValue(w http.ResponseWriter, r *http.Request) {
+func setValue(w http.ResponseWriter, r *http.Request) (int, error) {
+	value, err := ioutil.ReadAll(r.Body)
+	if err != nil || value == nil {
+		return InvalidErr, err
+	}
+	cmd := command.Command{
+		Op:    command.CmdSet,
+		Key:   r.URL.RequestURI(),
+		Value: value,
+	}
+	err = cmd.DoSet()
+	if err != nil {
+		return OpErr, err
+	}
 
+	return 0, nil
 }
 
-func delValue(w http.ResponseWriter, r *http.Request) {
+func delValue(w http.ResponseWriter, r *http.Request) (int, error) {
+	cmd := command.Command{
+		Op:  command.CmdDel,
+		Key: r.URL.RequestURI(),
+	}
 
+	err := cmd.DoDel()
+	if err != nil {
+		return OpErr, err
+	}
+	return 0, nil
 }

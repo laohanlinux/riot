@@ -1,6 +1,7 @@
 package cluster
 
 import (
+	"fmt"
 	"os"
 	"time"
 
@@ -9,24 +10,24 @@ import (
 	"github.com/laohanlinux/riot/fsm"
 )
 
-type node struct {
+type Node struct {
 	addr   string
-	dir    []string
+	dir    string
 	stores *raft.InmemStore
 	fsm    *fsm.StorageFSM
 	snap   *raft.FileSnapshotStore
-	tran   *raft.InmemTransport
+	tran   *raft.NetworkTransport
 	r      *raft.Raft
 }
 
 // close node
-func (c *node) Close() {
+func (c *Node) Close() {
 	// Wait for shutdown
 	timer := time.AfterFunc(200*time.Microsecond, func() {
 		panic("time out waiting for shutdown")
 	})
 
-	future := raft.Future
+	var future raft.Future
 
 	if err := future.Error(); err != nil {
 		panic(fmt.Errorf("shutdown future err: %v", err))
@@ -42,7 +43,7 @@ func (c *node) Close() {
 // 	return c.r.State()
 // }
 
-func (c *node) Leader() *raft.Raft {
+func (c *Node) Leader() *raft.Raft {
 	timeout := time.AfterFunc(400*time.Microsecond, func() {
 		panic("timeout waitting for leader")
 	})
@@ -56,11 +57,20 @@ func (c *node) Leader() *raft.Raft {
 	return nil
 }
 
-func (c *node) Connect() {
+func (c *Node) GetFSM() raft.FSM {
+	return c.fsm
+}
+
+func (c *Node) Connect() {
 	logger.Info("excute in raft.Connect")
 
 }
 
-func (c *node) Disconnect(a string) {
-	c.tran.DisconnectAll()
+func (c *Node) Disconnect(a string) {
+	c.tran.Close()
+}
+
+// Get .
+func (n *Node) Get(Key string) ([]byte, error) {
+	return n.fsm.Get(Key)
 }

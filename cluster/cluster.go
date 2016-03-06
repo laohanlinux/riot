@@ -3,32 +3,19 @@ package cluster
 import (
 	"io/ioutil"
 	"net"
+	"time"
 
 	"github.com/hashicorp/raft"
 	"github.com/laohanlinux/go-logger/logger"
 	"github.com/laohanlinux/riot/fsm"
 )
 
-// Cluster .
-type Cluster interface {
-	//NewCluster(*raft.Config)
-	Join(string) error
-	Leave() error
-	Close() error
-	RemoveNode(string) error
-	IsLeader() bool
-	Leader() *raft.Raft
-	LeaderCh() <-chan bool
-	Nodes() ([]string, error)
-}
-
-type riotCluster struct {
+type Cluster struct {
 	peerAddres []string
-	n          node
-	FSM        *fsm.StorageFSM
+	n          *Node
 }
 
-var rCluster *riotCluster
+var rCluster *Cluster
 
 // SingleCluster .
 func SingleCluster() *Cluster {
@@ -40,54 +27,70 @@ func NewCluster(localAddr string, peerAddres []string, conf *raft.Config) *Clust
 	if rCluster != nil {
 		return rCluster
 	}
-	rcluster = riotCluster{
+	rCluster = &Cluster{
 		peerAddres: make([]string, 0),
 	}
 
-	if a, err := net.ResolveTCPAddr("tcp", localAddr); err != nil {
+	_, err := net.ResolveTCPAddr("tcp", localAddr)
+	if err != nil {
 		panic(err)
-	} else {
-		rcluster.n.addr = localAdd
 	}
 
-	perrs := make([]string, 0)
+	rCluster.n.addr = localAddr
+
+	var peers []string
 	for _, addr := range peerAddres {
 		if p, err := net.ResolveTCPAddr("tcp", addr); err != nil {
 			panic(err)
 		} else {
-			perrs = raft.AddUniquePeer(perrs, p.String())
+			peers = raft.AddUniquePeer(peers, p.String())
 		}
 	}
 
-	rcluster.peerAddres = perrs
+	rCluster.peerAddres = peers
 	// Setup the restores and transports
-	for i := 0; i < n; i++ {
-		dir, err := ioutil.TempDir("", "raft")
-		if err != nil {
-			logger.Fatal(err)
-		}
-
-		// create log store dir
-		store := raft.NewInmemStore()
-		rcluster.n.dir = dir
-		rcluster.n.stores = store
-		rcluster.n.fsm = &fsm.StorageFSM{}
-
-		//create snap dir
-		_, snap := fileSnap()
-		rcluster.n.snap = snap
-
-		// create transport
-		addr, tran := raft.NewTCPTransport(rcluster)
-		rcluster.n.tran = tran
-		rcluster.localAdd = addr
+	dir, err := ioutil.TempDir("", "raft")
+	if err != nil {
+		logger.Fatal(err)
 	}
+
+	// create log store dir, may be use disk
+	store := raft.NewInmemStore()
+	rCluster.n.dir = dir
+	// for log and config storage
+	rCluster.n.stores = store
+	rCluster.n.fsm = &fsm.StorageFSM{}
+
+	//create snap dir
+	_, snap := fileSnap()
+	rCluster.n.snap = snap
+
+	// create peer storage
+	peerStore := &raft.StaticPeers{StaticPeers: peerAddres}
+	// create transport
+	tran, err := raft.NewTCPTransport(localAddr, nil, 3, 5*time.Second, nil)
+	if err != nil {
+		logger.Fatal(err)
+	}
+	rCluster.n.tran = tran
 
 	// Wait the transport
+	r, err := raft.NewRaft(conf, rCluster.n.fsm, store, store, snap, peerStore, tran)
+	if err != nil {
+		logger.Fatal(err)
+	}
 
-	// Create peerStore from log data
+	rCluster.n.r = r
+	return rCluster
 }
 
+func (c *Cluster) Node() *Node {
+	return c.n
+}
+
+func (c *Cluster) Leader() *raft.Raft {
+	return c.n.Leader()
+}
 func fileSnap() (string, *raft.FileSnapshotStore) {
 	dir, err := ioutil.TempDir("", "raft")
 	if err != nil {
