@@ -29,6 +29,7 @@ func NewCluster(localAddr string, peerAddres []string, conf *raft.Config) *Clust
 	}
 	rCluster = &Cluster{
 		peerAddres: make([]string, 0),
+		n:          &Node{},
 	}
 
 	_, err := net.ResolveTCPAddr("tcp", localAddr)

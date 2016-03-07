@@ -36,11 +36,14 @@ type RiotHandler struct {
 
 // ServeHTTP .
 func (rh *RiotHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+
 	mErrCode := &msgErrCode{
 		ErrCode: 0,
 	}
 
 	defer func() {
+		fmt.Println("path:", r.URL.RawPath)
+		fmt.Println("key:", r.URL.Path)
 		if err := recover(); err != nil {
 			mErrCode.ErrCode = InternalErr
 			w.WriteHeader(500)

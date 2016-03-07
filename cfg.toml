@@ -1,0 +1,17 @@
+
+[server]
+addr = "localhost"
+port = "8080" 
+
+[raft] 
+addr = "127.0.0.1"
+port = "12000"
+
+[rpc] 
+addr = "127.0.0.1"
+port = "32123"
+
+[log] 
+
+log_dir = "/tmp" 
+log_name = "raft_access_log" 
