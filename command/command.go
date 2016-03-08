@@ -1,15 +1,20 @@
 package command
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/laohanlinux/riot/cluster"
-	"github.com/laohanlinux/riot/pb"
+	"github.com/laohanlinux/riot/config"
+	"github.com/laohanlinux/riot/rpc"
+	"github.com/laohanlinux/riot/rpc/pb"
 )
 
 // ....
 const (
-	CmdGet = "get"
-	CmdSet = "set"
-	CmdDel = "del"
+	CmdGet = "GET"
+	CmdSet = "SET"
+	CmdDel = "DEL"
 )
 
 type Command struct {
@@ -26,27 +31,31 @@ func (cm Command) DoGet() ([]byte, error) {
 
 func (cm Command) DoSet() error {
 	c := cluster.SingleCluster()
-	addr := c.Leader().Leader()
+	addr := strings.Split(c.Leader(), ":")
+	fmt.Println(addr)
+	cfg := config.GetConfigure()
+	rpcAddr := addr[0] + ":" + cfg.RpcC.Port
 	opRequest := pb.OpRequest{
 		Op:    cm.Op,
 		Key:   cm.Key,
 		Value: cm.Value,
 	}
-	_, err := pb.NewRiotRPCClient().RPCRequest(addr, &opRequest)
+	_, err := rpc.NewRiotRPCClient().RPCRequest(rpcAddr, &opRequest)
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
 func (cm Command) DoDel() error {
 	c := cluster.SingleCluster()
-	addr := c.Leader().Leader()
+	addr := c.Leader()
 	opRequest := pb.OpRequest{
 		Op:    cm.Op,
 		Key:   cm.Key,
 		Value: cm.Value,
 	}
-	_, err := pb.NewRiotRPCClient().RPCRequest(addr, &opRequest)
+	_, err := rpc.NewRiotRPCClient().RPCRequest(addr, &opRequest)
 	return err
 }

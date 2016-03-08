@@ -43,22 +43,16 @@ func (c *Node) Close() {
 // 	return c.r.State()
 // }
 
-func (c *Node) Leader() *raft.Raft {
-	timeout := time.AfterFunc(400*time.Microsecond, func() {
-		panic("timeout waitting for leader")
-	})
-
-	defer timeout.Stop()
-	//            logger.Info(...)
-	// if c.r.State() == raft.Leader {
-	//                return
-	// }
-	logger.Info("No ")
-	return nil
+func (c *Node) Leader() string {
+	return c.r.Leader()
 }
 
 func (c *Node) GetFSM() raft.FSM {
 	return c.fsm
+}
+
+func (c *Node) RaftNode() *raft.Raft {
+	return c.r
 }
 
 func (c *Node) Connect() {

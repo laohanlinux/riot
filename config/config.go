@@ -33,13 +33,19 @@ type Configure struct {
 	LogC  LogConfig    `toml:"log"`
 }
 
+var c *Configure
+
 func NewConfig(data string) (*Configure, error) {
-	var c Configure
-	_, err := toml.Decode(data, &c)
+	c = new(Configure)
+	_, err := toml.Decode(data, c)
 	if err != nil {
 		return nil, err
 	}
-	return &c, nil
+	return c, nil
+}
+
+func GetConfigure() *Configure {
+	return c
 }
 
 func (c *Configure) Info() {

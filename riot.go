@@ -9,7 +9,7 @@ import (
 	"github.com/laohanlinux/riot/cluster"
 	"github.com/laohanlinux/riot/config"
 	"github.com/laohanlinux/riot/handler"
-	"github.com/laohanlinux/riot/pb"
+	"github.com/laohanlinux/riot/rpc"
 
 	"github.com/hashicorp/raft"
 	"github.com/laohanlinux/go-logger/logger"
@@ -38,7 +38,7 @@ func main() {
 
 	// Init rpc server
 	go func() {
-		_, err := pb.NewRpcServer(cfg.RpcC.Addr + ":" + cfg.RpcC.Port)
+		_, err := rpc.NewRpcServer(cfg.RpcC.Addr + ":" + cfg.RpcC.Port)
 		if err != nil {
 			panic(err)
 		}

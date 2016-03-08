@@ -7,77 +7,82 @@ import (
 	"net/http"
 
 	"github.com/laohanlinux/riot/command"
+	"github.com/laohanlinux/riot/fsm"
 )
 
 // ...
 const (
-	OpErr       = 0
-	NetErr      = 1
-	InternalErr = 2
-	InvalidErr  = 3
-	InvalidKey  = 4
+	Ok             = "ok"
+	OpErr          = "operation errror"
+	NetErr         = "net work timeout"
+	InternalErr    = "riot server error"
+	InvalidKey     = "invalid key"
+	InvalidRequest = "Invalid Request"
+	NotFound       = "not found"
 )
 
-type msgErrCode struct {
-	ErrCode int `json:"errCode"`
+var msgErrCodeMap map[string]errCodeObj
+
+type errCodeObj struct {
+	httpCode   int
+	StatusCode int    `json:"errCode"`
+	Info       string `json:"msg"`
 }
 
-func (m *msgErrCode) setJson(errCode ...int) []byte {
-	if len(errCode) > 0 {
-		m.ErrCode = errCode[0]
-	}
-	b, _ := json.Marshal(m)
+func (err *errCodeObj) toJsonBytes() []byte {
+	b, _ := json.Marshal(err)
 	return b
 }
 
-// RiotHandler ...
-type RiotHandler struct {
+func init() {
+	msgErrCodeMap = make(map[string]errCodeObj)
+	msgErrCodeMap[Ok] = errCodeObj{200, 20000, Ok}
+	msgErrCodeMap[OpErr] = errCodeObj{400, 40001, OpErr}
+	msgErrCodeMap[NotFound] = errCodeObj{404, 40004, NotFound}
+	msgErrCodeMap[NetErr] = errCodeObj{409, 40002, NetErr}
+	msgErrCodeMap[InvalidKey] = errCodeObj{403, 40003, InvalidKey}
+	msgErrCodeMap[InvalidRequest] = errCodeObj{403, 40005, InvalidRequest}
+	msgErrCodeMap[InternalErr] = errCodeObj{500, 50000, InternalErr}
 }
+
+// RiotHandler ...
+type RiotHandler struct{}
 
 // ServeHTTP .
 func (rh *RiotHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
-	mErrCode := &msgErrCode{
-		ErrCode: 0,
-	}
-
-	defer func() {
-		fmt.Println("path:", r.URL.RawPath)
-		fmt.Println("key:", r.URL.Path)
-		if err := recover(); err != nil {
-			mErrCode.ErrCode = InternalErr
-			w.WriteHeader(500)
-		}
-		w.Write(mErrCode.setJson())
-	}()
+	var value []byte
+	var err error
+	var errType string
 
 	switch r.Method {
 	case "GET":
-		errCode, value, err := getValue(w, r)
-		if errCode > 0 {
+		errType, value, err = getValue(w, r)
+		if err != nil {
 			fmt.Printf("%s\n", err)
-		} else {
-			fmt.Printf("value is :%s\n", value)
 		}
-		mErrCode.ErrCode = errCode
 	case "DELETE":
-		errCode, err := delValue(w, r)
+		errType, err = delValue(w, r)
 		if err != nil {
 			fmt.Printf("%s\n", err)
 		}
-		mErrCode.ErrCode = errCode
 	case "POST":
-		errCode, err := setValue(w, r)
+		errType, err = setValue(w, r)
 		if err != nil {
 			fmt.Printf("%s\n", err)
 		}
-		mErrCode.ErrCode = errCode
 	default:
+		errType = InvalidRequest
 	}
-
+	msg := msgErrCodeMap[errType]
+	if msg.httpCode == 200 {
+		w.Write(value)
+		return
+	}
+	w.WriteHeader(msg.httpCode)
+	w.Write(msg.toJsonBytes())
 }
 
-func getValue(w http.ResponseWriter, r *http.Request) (int, []byte, error) {
+func getValue(w http.ResponseWriter, r *http.Request) (string, []byte, error) {
 	cmd := command.Command{
 		Op:  command.CmdGet,
 		Key: r.URL.RequestURI(),
@@ -87,16 +92,19 @@ func getValue(w http.ResponseWriter, r *http.Request) (int, []byte, error) {
 	}
 
 	value, err := cmd.DoGet()
-	if err != nil {
+	if err != nil && err != fsm.ErrNotFound {
 		return OpErr, value, err
 	}
-	return 0, value, nil
+	if err == fsm.ErrNotFound {
+		return NotFound, nil, nil
+	}
+	return Ok, value, nil
 }
 
-func setValue(w http.ResponseWriter, r *http.Request) (int, error) {
+func setValue(w http.ResponseWriter, r *http.Request) (string, error) {
 	value, err := ioutil.ReadAll(r.Body)
 	if err != nil || value == nil {
-		return InvalidErr, err
+		return InvalidRequest, err
 	}
 	cmd := command.Command{
 		Op:    command.CmdSet,
@@ -105,21 +113,24 @@ func setValue(w http.ResponseWriter, r *http.Request) (int, error) {
 	}
 	err = cmd.DoSet()
 	if err != nil {
-		return OpErr, err
+		return InternalErr, err
 	}
-
-	return 0, nil
+	return Ok, nil
 }
 
-func delValue(w http.ResponseWriter, r *http.Request) (int, error) {
+func delValue(w http.ResponseWriter, r *http.Request) (string, error) {
 	cmd := command.Command{
 		Op:  command.CmdDel,
 		Key: r.URL.RequestURI(),
 	}
 
 	err := cmd.DoDel()
-	if err != nil {
+	if err != nil && err != fsm.ErrNotFound {
 		return OpErr, err
 	}
-	return 0, nil
+
+	if err == fsm.ErrNotFound {
+		return NotFound, nil
+	}
+	return Ok, nil
 }

@@ -3,6 +3,7 @@ package cluster
 import (
 	"io/ioutil"
 	"net"
+	"sync"
 	"time"
 
 	"github.com/hashicorp/raft"
@@ -60,7 +61,10 @@ func NewCluster(localAddr string, peerAddres []string, conf *raft.Config) *Clust
 	rCluster.n.dir = dir
 	// for log and config storage
 	rCluster.n.stores = store
-	rCluster.n.fsm = &fsm.StorageFSM{}
+	rCluster.n.fsm = &fsm.StorageFSM{
+		L:     &sync.Mutex{},
+		Cache: make(map[string][]byte),
+	}
 
 	//create snap dir
 	_, snap := fileSnap()
@@ -89,7 +93,7 @@ func (c *Cluster) Node() *Node {
 	return c.n
 }
 
-func (c *Cluster) Leader() *raft.Raft {
+func (c *Cluster) Leader() string {
 	return c.n.Leader()
 }
 func fileSnap() (string, *raft.FileSnapshotStore) {

@@ -1,8 +1,9 @@
-package pb
+package rpc
 
 import (
 	"sync"
 
+	"github.com/laohanlinux/riot/rpc/pb"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
@@ -24,7 +25,7 @@ func NewRiotRPCClient() *RiotRPCClient {
 	return rc
 }
 
-func (rc *RiotRPCClient) RPCRequest(rpcAdrr string, r *OpRequest) (*OpReply, error) {
+func (rc *RiotRPCClient) RPCRequest(rpcAdrr string, r *pb.OpRequest) (*pb.OpReply, error) {
 	rc.l.Lock()
 	var err error
 	conn, ok := rc.conn[rpcAdrr]
@@ -36,6 +37,6 @@ func (rc *RiotRPCClient) RPCRequest(rpcAdrr string, r *OpRequest) (*OpReply, err
 		}
 	}
 	rc.l.Unlock()
-	client := NewRiotGossipClient(conn)
+	client := pb.NewRiotGossipClient(conn)
 	return client.OpRPC(context.Background(), r)
 }
