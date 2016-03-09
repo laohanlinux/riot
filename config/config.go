@@ -17,8 +17,10 @@ type RpcConfig struct {
 }
 
 type RaftConfig struct {
-	Addr string `toml:"addr"`
-	Port string `toml:"port"`
+	Addr        string   `toml:"addr"`
+	Port        string   `toml:"port"`
+	Peers       []string `toml:"peers"`
+	PeerStorage string   `toml:"peer_storage"`
 }
 
 type LogConfig struct {

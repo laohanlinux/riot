@@ -15,11 +15,18 @@ import (
 
 var ErrNotFound = fmt.Errorf("the key's value is nil.")
 
+func NewStorageFSM() *StorageFSM {
+	return &StorageFSM{
+		l:     &sync.Mutex{},
+		cache: make(map[string][]byte),
+	}
+}
+
 // StorageFSM is an implememtation of the FSM interfacec, and just
 // storage the key/value logs sequentially
 type StorageFSM struct {
-	L     *sync.Mutex
-	Cache map[string][]byte
+	l     *sync.Mutex
+	cache map[string][]byte
 }
 
 // Apply is noly call in out with master leader
@@ -28,8 +35,8 @@ type StorageFSM struct {
 // TODO
 // use protocol buffer instead of json format
 func (s *StorageFSM) Apply(log *raft.Log) interface{} {
-	s.L.Lock()
-	defer s.L.Unlock()
+	s.l.Lock()
+	defer s.l.Unlock()
 
 	logger.Info("Excute StorageFSM.Apply ...")
 	var req pb.OpRequest
@@ -39,9 +46,9 @@ func (s *StorageFSM) Apply(log *raft.Log) interface{} {
 
 	switch req.Op {
 	case "SET":
-		s.Cache[req.Key] = req.Value
+		s.cache[req.Key] = req.Value
 	case "DEL":
-		delete(s.Cache, req.Key)
+		delete(s.cache, req.Key)
 	default:
 		return fmt.Errorf("%s is a invalid command", req.Op)
 	}
@@ -51,9 +58,9 @@ func (s *StorageFSM) Apply(log *raft.Log) interface{} {
 
 // Get .
 func (s *StorageFSM) Get(key string) ([]byte, error) {
-	s.L.Lock()
-	defer s.L.Unlock()
-	value, ok := s.Cache[key]
+	s.l.Lock()
+	defer s.l.Unlock()
+	value, ok := s.cache[key]
 	if !ok {
 		return nil, ErrNotFound
 	}
@@ -62,25 +69,25 @@ func (s *StorageFSM) Get(key string) ([]byte, error) {
 
 // Snapshot .
 func (s *StorageFSM) Snapshot() (raft.FSMSnapshot, error) {
-	s.L.Lock()
-	defer s.L.Unlock()
+	s.l.Lock()
+	defer s.l.Unlock()
 	logger.Info("Excute StorageFSM.Snapshot ...")
 	// return &StorageSnapshot{s.logs, len(s.logs)}, nil
 	return &StorageSnapshot{
-		diskCache: s.Cache,
+		diskCache: s.cache,
 	}, nil
 }
 
 // Restore data from persit location
 func (s *StorageFSM) Restore(inp io.ReadCloser) error {
 	logger.Info("Excute StorageFSN.Restore ...")
-	s.L.Lock()
-	defer s.L.Unlock()
+	s.l.Lock()
+	defer s.l.Unlock()
 	defer inp.Close()
 	hd := codec.MsgpackHandle{}
 	dec := codec.NewDecoder(inp, &hd)
-	s.Cache = nil
-	return dec.Decode(&s.Cache)
+	s.cache = nil
+	return dec.Decode(&s.cache)
 }
 
 // StorageSnapshot .

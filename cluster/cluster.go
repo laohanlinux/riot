@@ -3,17 +3,16 @@ package cluster
 import (
 	"io/ioutil"
 	"net"
-	"sync"
 	"time"
 
 	"github.com/hashicorp/raft"
 	"github.com/laohanlinux/go-logger/logger"
+	"github.com/laohanlinux/riot/config"
 	"github.com/laohanlinux/riot/fsm"
 )
 
 type Cluster struct {
-	peerAddres []string
-	n          *Node
+	n *Node
 }
 
 var rCluster *Cluster
@@ -24,13 +23,12 @@ func SingleCluster() *Cluster {
 }
 
 // NewCluster ...
-func NewCluster(localAddr string, peerAddres []string, conf *raft.Config) *Cluster {
+func NewCluster(cfg *config.Configure, conf *raft.Config) *Cluster {
 	if rCluster != nil {
 		return rCluster
 	}
 	rCluster = &Cluster{
-		peerAddres: make([]string, 0),
-		n:          &Node{},
+		n: &Node{},
 	}
 
 	_, err := net.ResolveTCPAddr("tcp", localAddr)
@@ -39,7 +37,7 @@ func NewCluster(localAddr string, peerAddres []string, conf *raft.Config) *Clust
 	}
 
 	rCluster.n.addr = localAddr
-
+	logger.Info(peerAddres)
 	var peers []string
 	for _, addr := range peerAddres {
 		if p, err := net.ResolveTCPAddr("tcp", addr); err != nil {
@@ -50,6 +48,9 @@ func NewCluster(localAddr string, peerAddres []string, conf *raft.Config) *Clust
 	}
 
 	rCluster.peerAddres = peers
+	logger.Debug(peers)
+	rCluster.n.r.SetPeers(rCluster.peerAddres)
+
 	// Setup the restores and transports
 	dir, err := ioutil.TempDir("", "raft")
 	if err != nil {
@@ -61,23 +62,21 @@ func NewCluster(localAddr string, peerAddres []string, conf *raft.Config) *Clust
 	rCluster.n.dir = dir
 	// for log and config storage
 	rCluster.n.stores = store
-	rCluster.n.fsm = &fsm.StorageFSM{
-		L:     &sync.Mutex{},
-		Cache: make(map[string][]byte),
-	}
+	rCluster.n.fsm = fsm.NewStorageFSM()
 
 	//create snap dir
 	_, snap := fileSnap()
 	rCluster.n.snap = snap
 
-	// create peer storage
-	peerStore := &raft.StaticPeers{StaticPeers: peerAddres}
 	// create transport
 	tran, err := raft.NewTCPTransport(localAddr, nil, 3, 5*time.Second, nil)
 	if err != nil {
 		logger.Fatal(err)
 	}
 	rCluster.n.tran = tran
+
+	// create peer storage
+	peerStorage := raft.NewJSONPeers(cfg.RaftC.PeerStorage, tran)
 
 	// Wait the transport
 	r, err := raft.NewRaft(conf, rCluster.n.fsm, store, store, snap, peerStore, tran)
