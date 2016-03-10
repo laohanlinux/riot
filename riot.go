@@ -54,8 +54,8 @@ func main() {
 	}
 	// Init raft server
 	rc := raft.DefaultConfig()
-	rc.EnableSingleNode = true
-	cluster.NewCluster(cfg.RaftC.Addr+":"+cfg.RaftC.Port, cfg.RaftC.Peers, rc)
+	// rc.EnableSingleNode = true
+	cluster.NewCluster(cfg, rc)
 
 	if err := http.ListenAndServe(cfg.SC.Addr+":"+cfg.SC.Port, &handler.RiotHandler{}); err != nil {
 		fmt.Printf("%s\n", err)

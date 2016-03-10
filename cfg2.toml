@@ -1,20 +1,20 @@
 
 [server]
 addr = "localhost"
-port = "8080" 
+port = "8082" 
 
 [raft] 
 addr = "127.0.0.1"
-port = "12000"
+port = "12002"
 peers = ["127.0.0.1:12000", "127.0.0.1:12001", "127.0.0.1:12002"]
-peer_storage = "/tmp/raft0/raft_peer_storage"
+peer_storage = "/tmp/raft2/raft_peer_storage"
 enable_single_node = true
 
 [rpc] 
 addr = "127.0.0.1"
-port = "32123"
+port = "32125"
 
 [log] 
 
-log_dir = "/tmp/raft0" 
+log_dir = "/tmp/raft2" 
 log_name = "raft_access_log" 

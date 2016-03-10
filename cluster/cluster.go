@@ -2,7 +2,6 @@ package cluster
 
 import (
 	"io/ioutil"
-	"net"
 	"time"
 
 	"github.com/hashicorp/raft"
@@ -31,26 +30,6 @@ func NewCluster(cfg *config.Configure, conf *raft.Config) *Cluster {
 		n: &Node{},
 	}
 
-	_, err := net.ResolveTCPAddr("tcp", localAddr)
-	if err != nil {
-		panic(err)
-	}
-
-	rCluster.n.addr = localAddr
-	logger.Info(peerAddres)
-	var peers []string
-	for _, addr := range peerAddres {
-		if p, err := net.ResolveTCPAddr("tcp", addr); err != nil {
-			panic(err)
-		} else {
-			peers = raft.AddUniquePeer(peers, p.String())
-		}
-	}
-
-	rCluster.peerAddres = peers
-	logger.Debug(peers)
-	rCluster.n.r.SetPeers(rCluster.peerAddres)
-
 	// Setup the restores and transports
 	dir, err := ioutil.TempDir("", "raft")
 	if err != nil {
@@ -69,23 +48,57 @@ func NewCluster(cfg *config.Configure, conf *raft.Config) *Cluster {
 	rCluster.n.snap = snap
 
 	// create transport
-	tran, err := raft.NewTCPTransport(localAddr, nil, 3, 5*time.Second, nil)
+	tran, err := raft.NewTCPTransport(cfg.RaftC.Addr+":"+cfg.RaftC.Port, nil, 3, 2*time.Second, nil)
 	if err != nil {
 		logger.Fatal(err)
 	}
 	rCluster.n.tran = tran
 
-	// create peer storage
+	// NewJSONPeers create a new JSONPees store
 	peerStorage := raft.NewJSONPeers(cfg.RaftC.PeerStorage, tran)
-
-	// Wait the transport
-	r, err := raft.NewRaft(conf, rCluster.n.fsm, store, store, snap, peerStore, tran)
+	ps, err := peerStorage.Peers()
 	if err != nil {
 		logger.Fatal(err)
 	}
+	for _, peer := range cfg.RaftC.Peers {
+		ps = raft.AddUniquePeer(ps, peer)
+	}
+	if cfg.RaftC.EnableSingleNode && len(ps) > 0 {
+		conf.EnableSingleNode = false
+	}
+	peerStorage.SetPeers(ps)
+	// Wait the transport
+	r, err := raft.NewRaft(conf, rCluster.n.fsm, store, store, snap, peerStorage, tran)
+	if err != nil {
+		logger.Fatal(err)
+	}
+	time.Sleep(time.Second * 3)
+	// future := r.VerifyLeader()
+	// if err := future.Error(); err != nil {
+	// 	logger.Error(err)
+	// }
+
+	// for _, peer := range ps {
+	// 	if peer != tran.LocalAddr() {
+	// 		future := r.AddPeer(peer)
+	// 		if err := future.Error(); err != nil {
+	// 			logger.Error(err)
+	// 		}
+	// 	}
+	// }
 
 	rCluster.n.r = r
+	go func() {
+		for {
+			time.Sleep(time.Second * 3)
+			logger.Info(r.State())
+		}
+	}()
 	return rCluster
+}
+
+func (c *Cluster) Join() {
+
 }
 
 func (c *Cluster) Node() *Node {
