@@ -26,7 +26,7 @@ type Command struct {
 // DoGet returns value by specified key
 func (cm Command) DoGet() ([]byte, error) {
 	c := cluster.SingleCluster()
-	return c.Node().Get(cm.Key)
+	return c.Get(cm.Key)
 }
 
 func (cm Command) DoSet() error {

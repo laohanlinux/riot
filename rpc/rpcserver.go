@@ -38,7 +38,7 @@ type RiotRPCService struct{}
 func (rcs *RiotRPCService) OpRPC(ctx context.Context, r *pb.OpRequest) (*pb.OpReply, error) {
 	b, _ := json.Marshal(r)
 	// get the local fsm
-	raftNode := cluster.SingleCluster().Node().RaftNode()
+	raftNode := cluster.SingleCluster().R
 	future := raftNode.Apply(b, time.Second)
 	if err := future.Error(); err != nil {
 		return &pb.OpReply{

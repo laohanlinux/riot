@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/BurntSushi/toml"
 )
@@ -43,6 +44,16 @@ func NewConfig(data string) (*Configure, error) {
 	_, err := toml.Decode(data, c)
 	if err != nil {
 		return nil, err
+	}
+
+	// Init Application Dir
+	dirs := []string{c.LogC.LogDir, c.RaftC.PeerStorage}
+	for _, dir := range dirs {
+		if _, err := os.Stat(dir); err != nil && os.IsNotExist(err) {
+			if err := os.MkdirAll(dir, 755); err != nil {
+				return nil, err
+			}
+		}
 	}
 	return c, nil
 }

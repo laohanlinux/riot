@@ -46,6 +46,7 @@ func (s *StorageFSM) Apply(log *raft.Log) interface{} {
 
 	switch req.Op {
 	case "SET":
+		logger.Info("Set:", req.Key, req.Value)
 		s.cache[req.Key] = req.Value
 	case "DEL":
 		delete(s.cache, req.Key)
@@ -61,6 +62,7 @@ func (s *StorageFSM) Get(key string) ([]byte, error) {
 	s.l.Lock()
 	defer s.l.Unlock()
 	value, ok := s.cache[key]
+	logger.Info("Get:", key)
 	if !ok {
 		return nil, ErrNotFound
 	}

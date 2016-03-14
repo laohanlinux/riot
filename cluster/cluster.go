@@ -11,7 +11,13 @@ import (
 )
 
 type Cluster struct {
-	n *Node
+	Dir         string
+	R           *raft.Raft
+	Stores      *raft.InmemStore
+	FSM         *fsm.StorageFSM
+	Snap        raft.SnapshotStore
+	Tran        raft.Transport
+	PeerStorage raft.PeerStore
 }
 
 var rCluster *Cluster
@@ -26,9 +32,7 @@ func NewCluster(cfg *config.Configure, conf *raft.Config) *Cluster {
 	if rCluster != nil {
 		return rCluster
 	}
-	rCluster = &Cluster{
-		n: &Node{},
-	}
+	rCluster = &Cluster{}
 
 	// Setup the restores and transports
 	dir, err := ioutil.TempDir("", "raft")
@@ -38,21 +42,21 @@ func NewCluster(cfg *config.Configure, conf *raft.Config) *Cluster {
 
 	// create log store dir, may be use disk
 	store := raft.NewInmemStore()
-	rCluster.n.dir = dir
+	rCluster.Dir = dir
 	// for log and config storage
-	rCluster.n.stores = store
-	rCluster.n.fsm = fsm.NewStorageFSM()
+	rCluster.Stores = store
+	rCluster.FSM = fsm.NewStorageFSM()
 
 	//create snap dir
 	_, snap := fileSnap()
-	rCluster.n.snap = snap
+	rCluster.Snap = snap
 
 	// create transport
 	tran, err := raft.NewTCPTransport(cfg.RaftC.Addr+":"+cfg.RaftC.Port, nil, 3, 2*time.Second, nil)
 	if err != nil {
 		logger.Fatal(err)
 	}
-	rCluster.n.tran = tran
+	rCluster.Tran = tran
 
 	// NewJSONPeers create a new JSONPees store
 	peerStorage := raft.NewJSONPeers(cfg.RaftC.PeerStorage, tran)
@@ -67,33 +71,15 @@ func NewCluster(cfg *config.Configure, conf *raft.Config) *Cluster {
 		conf.EnableSingleNode = false
 	}
 	peerStorage.SetPeers(ps)
+	rCluster.PeerStorage = peerStorage
 	// Wait the transport
-	r, err := raft.NewRaft(conf, rCluster.n.fsm, store, store, snap, peerStorage, tran)
+	r, err := raft.NewRaft(conf, rCluster.FSM, store, store, snap, peerStorage, tran)
 	if err != nil {
 		logger.Fatal(err)
 	}
-	time.Sleep(time.Second * 3)
-	// future := r.VerifyLeader()
-	// if err := future.Error(); err != nil {
-	// 	logger.Error(err)
-	// }
+	rCluster.R = r
 
-	// for _, peer := range ps {
-	// 	if peer != tran.LocalAddr() {
-	// 		future := r.AddPeer(peer)
-	// 		if err := future.Error(); err != nil {
-	// 			logger.Error(err)
-	// 		}
-	// 	}
-	// }
-
-	rCluster.n.r = r
-	go func() {
-		for {
-			time.Sleep(time.Second * 3)
-			logger.Info(r.State())
-		}
-	}()
+	go rCluster.LeaderChange()
 	return rCluster
 }
 
@@ -101,12 +87,20 @@ func (c *Cluster) Join() {
 
 }
 
-func (c *Cluster) Node() *Node {
-	return c.n
+func (c *Cluster) LeaderChange() {
+	for {
+		logger.Info("leader is: ", c.R.Leader())
+		<-c.R.LeaderCh()
+		logger.Info("leader change to ", c.R.Leader())
+	}
 }
 
 func (c *Cluster) Leader() string {
-	return c.n.Leader()
+	return c.Leader()
+}
+
+func (c *Cluster) Get(key string) ([]byte, error) {
+	return c.FSM.Get(key)
 }
 func fileSnap() (string, *raft.FileSnapshotStore) {
 	dir, err := ioutil.TempDir("", "raft")

@@ -16,5 +16,5 @@ port = "32125"
 
 [log] 
 
-log_dir = "/tmp/raft2" 
+log_dir = "/tmp/raft2/logs" 
 log_name = "raft_access_log" 

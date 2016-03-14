@@ -13,6 +13,7 @@ import (
 
 	"github.com/hashicorp/raft"
 	"github.com/laohanlinux/go-logger/logger"
+	"github.com/laohanlinux/mux"
 )
 
 func main() {
@@ -57,7 +58,10 @@ func main() {
 	// rc.EnableSingleNode = true
 	cluster.NewCluster(cfg, rc)
 
-	if err := http.ListenAndServe(cfg.SC.Addr+":"+cfg.SC.Port, &handler.RiotHandler{}); err != nil {
+	m := mux.NewRouter()
+	m.Handle("/riot", &handler.RiotHandler{})
+	m.HandleFunc("/admin/{cmd}", handler.AdminHandlerFunc)
+	if err := http.ListenAndServe(cfg.SC.Addr+":"+cfg.SC.Port, m); err != nil {
 		fmt.Printf("%s\n", err)
 	}
 }
