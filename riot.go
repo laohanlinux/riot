@@ -1,10 +1,13 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"runtime/debug"
 
 	"github.com/laohanlinux/riot/cluster"
 	"github.com/laohanlinux/riot/config"
@@ -16,11 +19,18 @@ import (
 	"github.com/laohanlinux/mux"
 )
 
+var joinAddr string
+
 func main() {
 	var cfgPath string
 	flag.StringVar(&cfgPath, "c", "", "configure path")
+	flag.StringVar(&joinAddr, "join", "", "host:port of leader to join")
 	flag.Parse()
-
+	defer func() {
+		if err := recover(); err != nil {
+			debug.PrintStack()
+		}
+	}()
 	if cfgPath == "" {
 		fmt.Println("No config path")
 		return
@@ -55,6 +65,16 @@ func main() {
 	}
 	// Init raft server
 	rc := raft.DefaultConfig()
+
+	if joinAddr != "" {
+		b, _ := json.Marshal(map[string]string{"ip": cfg.RaftC.Addr, "port": cfg.RaftC.Port})
+		resp, err := http.Post("http://"+joinAddr+"/admin/join", "application-type/json", bytes.NewReader(b))
+		if err != nil {
+			logger.Error(err)
+			return
+		}
+		fmt.Printf("%v\n", resp)
+	}
 	// rc.EnableSingleNode = true
 	cluster.NewCluster(cfg, rc)
 

@@ -96,7 +96,7 @@ func (c *Cluster) LeaderChange() {
 }
 
 func (c *Cluster) Leader() string {
-	return c.Leader()
+	return c.R.Leader()
 }
 
 func (c *Cluster) Get(key string) ([]byte, error) {
