@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/laohanlinux/go-logger/logger"
@@ -99,6 +100,7 @@ func doPost(w http.ResponseWriter, r *http.Request) (int, error) {
 		return aNetErr, err
 	}
 	switch cmdAdmin {
+	// let the node(addr:port) join the cluster
 	case "join":
 		// {"addr:": "", "port":""}
 		var remoteAdd = make(map[string]string)
@@ -108,8 +110,22 @@ func doPost(w http.ResponseWriter, r *http.Request) (int, error) {
 		if len(remoteAdd) < 1 {
 			return aBytesErr, fmt.Errorf("post body is invalid")
 		}
-		// TODO
-		// call cmd to do it
+		// 1. Get The Leader
+		leaderName := cluster.SingleCluster().Leader()
+		if leaderName == "" {
+			return aNoLeaderErr, fmt.Errorf("No Leader In Cluster")
+		}
+		logger.Info("The Leader Name is :", leaderName)
+		// 2. make sure the leader is itself
+		if !strings.HasPrefix(leaderName, remoteAdd["addr"]) && remoteAdd["addr"] != "" {
+			return aNoLeaderErr, nil
+		}
+		addr := remoteAdd["ip"] + ":" + remoteAdd["port"]
+		// _, err := net.ResolveIPAddr("tcp", addr)
+		// if err != nil {
+		// 	return aBytesErr, err
+		// }
+		logger.Debug(addr, "will join the cluster, leader is :", leaderName)
 		future := cluster.SingleCluster().R.AddPeer(remoteAdd["ip"+":"+remoteAdd["port"]])
 		if err := future.Error(); err != nil {
 			return aBytesErr, err

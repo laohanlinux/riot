@@ -6,8 +6,8 @@ port = "8081"
 [raft] 
 addr = "127.0.0.1"
 port = "12001"
-peers = ["127.0.0.1:12000", "127.0.0.1:12001", "127.0.0.1:12002"]
-peer_storage = "/tmp/raft1/raft_peer_storage"
+peers = ["127.0.0.1:12000"]
+peer_storage = "raft1/raft_peer_storage"
 enable_single_node = true
 
 [rpc] 
@@ -16,5 +16,5 @@ port = "32124"
 
 [log] 
 
-log_dir = "/tmp/raft1/logs" 
+log_dir = "raft1/logs" 
 log_name = "raft_access_log" 

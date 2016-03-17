@@ -67,8 +67,8 @@ func NewCluster(cfg *config.Configure, conf *raft.Config) *Cluster {
 	for _, peer := range cfg.RaftC.Peers {
 		ps = raft.AddUniquePeer(ps, peer)
 	}
-	if cfg.RaftC.EnableSingleNode && len(ps) > 0 {
-		conf.EnableSingleNode = false
+	if cfg.RaftC.EnableSingleNode && len(ps) == 1 {
+		conf.EnableSingleNode = true
 	}
 	peerStorage.SetPeers(ps)
 	rCluster.PeerStorage = peerStorage

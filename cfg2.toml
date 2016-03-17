@@ -6,7 +6,7 @@ port = "8082"
 [raft] 
 addr = "127.0.0.1"
 port = "12002"
-peers = ["127.0.0.1:12000", "127.0.0.1:12001", "127.0.0.1:12002"]
+peers = ["127.0.0.1:12000"]
 peer_storage = "/tmp/raft2/raft_peer_storage"
 enable_single_node = true
 
