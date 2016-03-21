@@ -82,9 +82,9 @@ func doGet(w http.ResponseWriter, r *http.Request) (int, interface{}, error) {
 		if err != nil {
 			return aUnkownErr, nil, err
 		}
-		peerStr := ""
+		var peerStr []string
 		for _, peer := range peers {
-			peerStr += fmt.Sprintf("%s\r\n", peer)
+			peerStr = append(peers, fmt.Sprintf("%s", peer))
 		}
 		return aErrOk, peerStr, nil
 	default:

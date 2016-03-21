@@ -50,7 +50,7 @@ func NewConfig(data string) (*Configure, error) {
 	dirs := []string{c.LogC.LogDir, c.RaftC.PeerStorage}
 	for _, dir := range dirs {
 		if _, err := os.Stat(dir); err != nil && os.IsNotExist(err) {
-			if err := os.MkdirAll(dir, 755); err != nil {
+			if err := os.MkdirAll(dir, os.ModePerm); err != nil {
 				return nil, err
 			}
 		}

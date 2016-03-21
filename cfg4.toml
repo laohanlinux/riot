@@ -6,9 +6,9 @@ port = "8084"
 [raft] 
 addr = "127.0.0.1"
 port = "12004"
-peers = ["127.0.0.1:12004"]
+peers = []
 peer_storage = "raft4/raft_peer_storage"
-enable_single_node = false 
+enable_single_node = true 
 
 [rpc] 
 addr = "127.0.0.1"

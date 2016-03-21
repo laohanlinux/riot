@@ -35,14 +35,14 @@ func NewCluster(cfg *config.Configure, conf *raft.Config) *Cluster {
 	rCluster = &Cluster{}
 
 	// Setup the restores and transports
-	dir, err := ioutil.TempDir("", "raft")
-	if err != nil {
-		logger.Fatal(err)
-	}
+	// dir, err := ioutil.TempDir("", "raft")
+	// if err != nil {
+	// 	logger.Fatal(err)
+	// }
 
 	// create log store dir, may be use disk
 	store := raft.NewInmemStore()
-	rCluster.Dir = dir
+	// rCluster.Dir = dir
 	// for log and config storage
 	rCluster.Stores = store
 	rCluster.FSM = fsm.NewStorageFSM()
@@ -67,9 +67,11 @@ func NewCluster(cfg *config.Configure, conf *raft.Config) *Cluster {
 	for _, peer := range cfg.RaftC.Peers {
 		ps = raft.AddUniquePeer(ps, peer)
 	}
-	if cfg.RaftC.EnableSingleNode && len(ps) == 1 {
+	if cfg.RaftC.EnableSingleNode && len(ps) <= 1 {
+		logger.Debug("SingleNode:", true)
 		conf.EnableSingleNode = true
 	}
+	logger.Debug("peers:", ps)
 	peerStorage.SetPeers(ps)
 	rCluster.PeerStorage = peerStorage
 	// Wait the transport

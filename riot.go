@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"runtime"
 	"runtime/debug"
+	"time"
 
 	"github.com/laohanlinux/riot/cluster"
 	"github.com/laohanlinux/riot/config"
@@ -26,6 +28,8 @@ func main() {
 	flag.StringVar(&cfgPath, "c", "", "configure path")
 	flag.StringVar(&joinAddr, "join", "", "host:port of leader to join")
 	flag.Parse()
+	runtime.GOMAXPROCS(runtime.NumCPU())
+
 	defer func() {
 		if err := recover(); err != nil {
 			debug.PrintStack()
@@ -67,13 +71,7 @@ func main() {
 	rc := raft.DefaultConfig()
 
 	if joinAddr != "" {
-		b, _ := json.Marshal(map[string]string{"ip": cfg.RaftC.Addr, "port": cfg.RaftC.Port})
-		resp, err := http.Post("http://"+joinAddr+"/admin/join", "application-type/json", bytes.NewReader(b))
-		if err != nil {
-			logger.Error(err)
-			return
-		}
-		fmt.Printf("%v\n", resp)
+		go join(cfg)
 	}
 	// rc.EnableSingleNode = true
 	cluster.NewCluster(cfg, rc)
@@ -83,5 +81,24 @@ func main() {
 	m.HandleFunc("/admin/{cmd}", handler.AdminHandlerFunc)
 	if err := http.ListenAndServe(cfg.SC.Addr+":"+cfg.SC.Port, m); err != nil {
 		fmt.Printf("%s\n", err)
+	}
+}
+
+func join(cfg *config.Configure) {
+	for {
+		time.Sleep(time.Second)
+		b, _ := json.Marshal(map[string]string{"ip": cfg.RaftC.Addr, "port": cfg.RaftC.Port})
+		resp, err := http.Post("http://"+joinAddr+"/admin/join", "application-type/json", bytes.NewReader(b))
+		if err != nil {
+			logger.Error(err)
+			continue
+		}
+		rpl, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			logger.Error(err)
+			continue
+		}
+		resp.Body.Close()
+		fmt.Printf("%s\n", rpl)
 	}
 }
