@@ -125,10 +125,6 @@ func doPost(w http.ResponseWriter, r *http.Request) (int, error) {
 			return aNoLeaderErr, nil
 		}
 		addr := remoteAdd["ip"] + ":" + remoteAdd["port"]
-		// _, err := net.ResolveIPAddr("tcp", addr)
-		// if err != nil {
-		// 	return aBytesErr, err
-		// }
 		logger.Debug(addr, "will join the cluster, leader is :", leaderName)
 		future := cluster.SingleCluster().R.AddPeer(addr)
 		if err := future.Error(); err != nil {
@@ -138,6 +134,27 @@ func doPost(w http.ResponseWriter, r *http.Request) (int, error) {
 			return aBytesErr, err
 		}
 	}
-
 	return aErrOk, nil
+}
+
+func doDel(w http.ResponseWriter, r *http.Request) (int, error) {
+	vars := mux.Vars(r)
+	cmdAdmin := vars["cmd"]
+	b, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return aNetErr, err
+	}
+	switch cmdAdmin {
+	case "remove":
+		// {"addr:": "", "port":""}
+		var remoteAdd = make(map[string]string)
+		if err := json.Unmarshal(b, &remoteAdd); err != nil {
+			return aBytesErr, err
+		}
+		if len(remoteAdd) < 1 {
+			return aBytesErr, fmt.Errorf("post body is invalid")
+		}
+	}
+
+	return aBytesErr, nil
 }
