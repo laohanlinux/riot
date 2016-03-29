@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/raft"
 	"github.com/laohanlinux/go-logger/logger"
 	"github.com/laohanlinux/riot/cluster"
 
@@ -84,9 +85,12 @@ func doGet(w http.ResponseWriter, r *http.Request) (int, interface{}, error) {
 		}
 		var peerStr []string
 		for _, peer := range peers {
-			peerStr = append(peers, fmt.Sprintf("%s", peer))
+			peerStr = raft.AddUniquePeer(peerStr, peer)
 		}
 		return aErrOk, peerStr, nil
+	case "status":
+		status := cluster.SingleCluster().Status()
+		return aErrOk, status, nil
 	default:
 		return aUnkownCmdErr, nil, fmt.Errorf("%s is unkown cmd", cmdAdmin)
 	}
@@ -126,8 +130,11 @@ func doPost(w http.ResponseWriter, r *http.Request) (int, error) {
 		// 	return aBytesErr, err
 		// }
 		logger.Debug(addr, "will join the cluster, leader is :", leaderName)
-		future := cluster.SingleCluster().R.AddPeer(remoteAdd["ip"+":"+remoteAdd["port"]])
+		future := cluster.SingleCluster().R.AddPeer(addr)
 		if err := future.Error(); err != nil {
+			if err == raft.ErrKnownPeer {
+				return aErrOk, nil
+			}
 			return aBytesErr, err
 		}
 	}

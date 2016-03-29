@@ -8,7 +8,7 @@ addr = "127.0.0.1"
 port = "12000"
 peers = ["127.0.0.1:12000"]
 peer_storage = "raft0/raft_peer_storage"
-enable_single_node = false 
+enable_single_node = true 
 
 [rpc] 
 addr = "127.0.0.1"

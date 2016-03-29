@@ -60,19 +60,22 @@ func NewCluster(cfg *config.Configure, conf *raft.Config) *Cluster {
 
 	// NewJSONPeers create a new JSONPees store
 	peerStorage := raft.NewJSONPeers(cfg.RaftC.PeerStorage, tran)
+
 	ps, err := peerStorage.Peers()
-	if err != nil {
+	/*if err != nil {
 		logger.Fatal(err)
 	}
 	for _, peer := range cfg.RaftC.Peers {
 		ps = raft.AddUniquePeer(ps, peer)
-	}
+	}*/
 	if cfg.RaftC.EnableSingleNode && len(ps) <= 1 {
 		logger.Debug("SingleNode:", true)
-		conf.EnableSingleNode = true
+		conf.EnableSingleNode = cfg.RaftC.EnableSingleNode
+		conf.DisableBootstrapAfterElect = false
 	}
 	logger.Debug("peers:", ps)
 	peerStorage.SetPeers(ps)
+
 	rCluster.PeerStorage = peerStorage
 	// Wait the transport
 	r, err := raft.NewRaft(conf, rCluster.FSM, store, store, snap, peerStorage, tran)
@@ -81,12 +84,15 @@ func NewCluster(cfg *config.Configure, conf *raft.Config) *Cluster {
 	}
 	rCluster.R = r
 
-	go rCluster.LeaderChange()
+	//go rCluster.LeaderChange()
 	return rCluster
 }
 
 func (c *Cluster) Join() {
 
+}
+func (c *Cluster) Status() string {
+	return c.R.State().String()
 }
 
 func (c *Cluster) LeaderChange() {

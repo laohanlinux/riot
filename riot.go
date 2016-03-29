@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"runtime"
 	"runtime/debug"
+	"sync"
 	"time"
 
 	"github.com/laohanlinux/riot/cluster"
@@ -51,40 +52,54 @@ func main() {
 	}
 	cfg.Info()
 
+	var gGroup sync.WaitGroup
+	var rpcService rpc.RiotRPCService
 	// Init rpc server
+	gGroup.Add(1)
 	go func() {
-		_, err := rpc.NewRpcServer(cfg.RpcC.Addr + ":" + cfg.RpcC.Port)
+		defer gGroup.Done()
+		var err error
+		rpcService, err = rpc.NewRpcServer(cfg.RpcC.Addr + ":" + cfg.RpcC.Port)
 		if err != nil {
 			panic(err)
 		}
 		fmt.Println("Start rpc server successfully")
 	}()
 
-	// Ini log configure
-	logger.SetConsole(true)
-	err = logger.SetRollingDaily(cfg.LogC.LogDir, cfg.LogC.LogName)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	// Init raft server
-	rc := raft.DefaultConfig()
+	gGroup.Add(1)
+	go func() {
+		defer gGroup.Done()
+		// Ini log configure
+		logger.SetConsole(true)
+		err = logger.SetRollingDaily(cfg.LogC.LogDir, cfg.LogC.LogName)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		// Init raft server
+		rc := raft.DefaultConfig()
 
-	if joinAddr != "" {
-		go join(cfg)
-	}
-	// rc.EnableSingleNode = true
-	cluster.NewCluster(cfg, rc)
+		if joinAddr != "" {
+			go join(cfg)
+		}
+		// rc.EnableSingleNode = true
+		cluster.NewCluster(cfg, rc)
 
-	m := mux.NewRouter()
-	m.Handle("/riot", &handler.RiotHandler{})
-	m.HandleFunc("/admin/{cmd}", handler.AdminHandlerFunc)
-	if err := http.ListenAndServe(cfg.SC.Addr+":"+cfg.SC.Port, m); err != nil {
-		fmt.Printf("%s\n", err)
-	}
+		m := mux.NewRouter()
+		m.Handle("/riot", &handler.RiotHandler{})
+		m.HandleFunc("/admin/{cmd}", handler.AdminHandlerFunc)
+		if err := http.ListenAndServe(cfg.SC.Addr+":"+cfg.SC.Port, m); err != nil {
+			fmt.Printf("%s\n", err)
+		}
+
+	}()
+
+	gGroup.Wait()
+	fmt.Println("raft has exited")
 }
 
 func join(cfg *config.Configure) {
+	var results handler.ResponseMsg
 	for {
 		time.Sleep(time.Second)
 		b, _ := json.Marshal(map[string]string{"ip": cfg.RaftC.Addr, "port": cfg.RaftC.Port})
@@ -99,6 +114,11 @@ func join(cfg *config.Configure) {
 			continue
 		}
 		resp.Body.Close()
-		fmt.Printf("%s\n", rpl)
+		if err = json.Unmarshal(rpl, &results); err != nil {
+			logger.Error(err)
+			continue
+		}
+		logger.Info(results)
+		return
 	}
 }
