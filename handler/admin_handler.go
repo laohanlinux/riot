@@ -154,6 +154,25 @@ func doDel(w http.ResponseWriter, r *http.Request) (int, error) {
 		if len(remoteAdd) < 1 {
 			return aBytesErr, fmt.Errorf("post body is invalid")
 		}
+		// 1. Get The Leader
+		leaderName := cluster.SingleCluster().Leader()
+		if leaderName == "" {
+			return aNoLeaderErr, fmt.Errorf("No Leader In Cluster")
+		}
+		logger.Info("The Leader Name is :", leaderName)
+		// 2. make sure the leader is itself
+		if !strings.HasPrefix(leaderName, remoteAdd["addr"]) && remoteAdd["addr"] != "" {
+			return aNoLeaderErr, nil
+		}
+		addr := remoteAdd["ip"] + ":" + remoteAdd["port"]
+		logger.Debug(addr, "will be removed from the cluster, leader is :", leaderName)
+		future := cluster.SingleCluster().R.RemovePeer(addr)
+		if err := future.Error(); err != nil {
+			if err == raft.ErrKnownPeer {
+				return aErrOk, nil
+			}
+			return aBytesErr, err
+		}
 	}
 
 	return aBytesErr, nil

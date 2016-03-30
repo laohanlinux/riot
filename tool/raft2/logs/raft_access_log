@@ -1,0 +1,6 @@
+
+2016/03/30 18:47:35 cluster.go:119: [info] snap save dir:/tmp/raft516837168
+
+2016/03/30 18:47:35 cluster.go:76: [debug] peers:[]
+
+2016/03/30 18:47:36 riot.go:121: [info] {<nil> 0 0.000874305 {0 0 <nil>}}

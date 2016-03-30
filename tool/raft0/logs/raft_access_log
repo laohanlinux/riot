@@ -1,0 +1,14 @@
+
+2016/03/30 18:47:31 cluster.go:119: [info] snap save dir:/tmp/raft344833806
+
+2016/03/30 18:47:31 cluster.go:72: [debug] SingleNode:true
+
+2016/03/30 18:47:31 cluster.go:76: [debug] peers:[]
+
+2016/03/30 18:47:34 admin_handler.go:122: [info] The Leader Name is :127.0.0.1:12000
+
+2016/03/30 18:47:34 admin_handler.go:128: [debug] 127.0.0.1:12001will join the cluster, leader is :127.0.0.1:12000
+
+2016/03/30 18:47:36 admin_handler.go:122: [info] The Leader Name is :127.0.0.1:12000
+
+2016/03/30 18:47:36 admin_handler.go:128: [debug] 127.0.0.1:12002will join the cluster, leader is :127.0.0.1:12000

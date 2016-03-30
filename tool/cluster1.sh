@@ -1,5 +1,9 @@
 pkill riot 
+cd ..
 go build riot.go 
+
+mv riot tool 
+cd tool
 
 rm -fr raft0 raft1 raft2 raft3 raft4
 
