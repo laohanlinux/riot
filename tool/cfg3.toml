@@ -8,6 +8,7 @@ addr = "127.0.0.1"
 port = "12003"
 peers = []
 peer_storage = "raft3/raft_peer_storage"
+snapshot_storage = "raft3/raft_snapshot_storage"
 enable_single_node = true 
 
 [rpc] 

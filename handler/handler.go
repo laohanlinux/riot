@@ -103,7 +103,7 @@ func getValue(w http.ResponseWriter, r *http.Request) (string, []byte, error) {
 
 func setValue(w http.ResponseWriter, r *http.Request) (string, error) {
 	value, err := ioutil.ReadAll(r.Body)
-	if err != nil || value == nil {
+	if err != nil || value == nil || len(value) == 0 {
 		return InvalidRequest, err
 	}
 	cmd := command.Command{

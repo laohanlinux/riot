@@ -34,12 +34,6 @@ func NewCluster(cfg *config.Configure, conf *raft.Config) *Cluster {
 	}
 	rCluster = &Cluster{}
 
-	// Setup the restores and transports
-	// dir, err := ioutil.TempDir("", "raft")
-	// if err != nil {
-	// 	logger.Fatal(err)
-	// }
-
 	// create log store dir, may be use disk
 	store := raft.NewInmemStore()
 	// rCluster.Dir = dir
@@ -48,7 +42,10 @@ func NewCluster(cfg *config.Configure, conf *raft.Config) *Cluster {
 	rCluster.FSM = fsm.NewStorageFSM()
 
 	//create snap dir
-	_, snap := fileSnap()
+	snap, err := raft.NewFileSnapshotStore(cfg.RaftC.SnapshotStorage, 3, nil)
+	if err != nil {
+		logger.Fatal(err)
+	}
 	rCluster.Snap = snap
 
 	// create transport
@@ -62,12 +59,6 @@ func NewCluster(cfg *config.Configure, conf *raft.Config) *Cluster {
 	peerStorage := raft.NewJSONPeers(cfg.RaftC.PeerStorage, tran)
 
 	ps, err := peerStorage.Peers()
-	/*if err != nil {
-		logger.Fatal(err)
-	}
-	for _, peer := range cfg.RaftC.Peers {
-		ps = raft.AddUniquePeer(ps, peer)
-	}*/
 	if cfg.RaftC.EnableSingleNode && len(ps) <= 1 {
 		logger.Debug("SingleNode:", true)
 		conf.EnableSingleNode = cfg.RaftC.EnableSingleNode
@@ -110,7 +101,7 @@ func (c *Cluster) Leader() string {
 func (c *Cluster) Get(key string) ([]byte, error) {
 	return c.FSM.Get(key)
 }
-func fileSnap() (string, *raft.FileSnapshotStore) {
+func fileSnap(snapshotStorage string) (string, *raft.FileSnapshotStore) {
 	dir, err := ioutil.TempDir("", "raft")
 	if err != nil {
 		panic(err)

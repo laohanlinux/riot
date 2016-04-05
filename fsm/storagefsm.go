@@ -74,7 +74,6 @@ func (s *StorageFSM) Snapshot() (raft.FSMSnapshot, error) {
 	s.l.Lock()
 	defer s.l.Unlock()
 	logger.Info("Excute StorageFSM.Snapshot ...")
-	// return &StorageSnapshot{s.logs, len(s.logs)}, nil
 	return &StorageSnapshot{
 		diskCache: s.cache,
 	}, nil
@@ -94,15 +93,12 @@ func (s *StorageFSM) Restore(inp io.ReadCloser) error {
 
 // StorageSnapshot .
 type StorageSnapshot struct {
-	// logs     [][]byte
-	// maxIndex int
 	diskCache map[string][]byte
 }
 
 // Persist ...
 func (s *StorageSnapshot) Persist(sink raft.SnapshotSink) error {
 	logger.Info("Excute StorageSnapshot.Persist ... ")
-
 	hd := codec.MsgpackHandle{}
 	enc := codec.NewEncoder(sink, &hd)
 
