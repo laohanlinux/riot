@@ -11,14 +11,24 @@ import (
 	"github.com/hashicorp/raft"
 	"github.com/laohanlinux/go-logger/logger"
 	"github.com/laohanlinux/riot/rpc/pb"
+	"github.com/laohanlinux/riot/store"
+	"github.com/syndtr/goleveldb/leveldb/errors"
 )
 
 var ErrNotFound = fmt.Errorf("the key's value is nil.")
 
-func NewStorageFSM() *StorageFSM {
+//
+// const (
+// 	AppendAction = "rebuild the storage."
+// 	CreateAction = "create a new db if the db is not exist"
+// 	TruncAction  = "create a new db"
+// )
+
+func NewStorageFSM(rs RiotStorage) *StorageFSM {
 	return &StorageFSM{
 		l:     &sync.Mutex{},
 		cache: make(map[string][]byte),
+		rs:    rs,
 	}
 }
 
@@ -27,6 +37,7 @@ func NewStorageFSM() *StorageFSM {
 type StorageFSM struct {
 	l     *sync.Mutex
 	cache map[string][]byte
+	rs    RiotStorage
 }
 
 // Apply is noly call in out with master leader
@@ -44,27 +55,31 @@ func (s *StorageFSM) Apply(log *raft.Log) interface{} {
 		logger.Fatal(err)
 	}
 
+	var err error
 	switch req.Op {
 	case "SET":
 		logger.Info("Set:", req.Key, req.Value)
-		s.cache[req.Key] = req.Value
+		err = s.rs.Set([]byte(req.Key), req.Value)
 	case "DEL":
-		delete(s.cache, req.Key)
+		err = s.rs.Del([]byte(req.Key))
 	default:
 		return fmt.Errorf("%s is a invalid command", req.Op)
 	}
 
-	return nil
+	return err
 }
 
 // Get .
 func (s *StorageFSM) Get(key string) ([]byte, error) {
 	s.l.Lock()
 	defer s.l.Unlock()
-	value, ok := s.cache[key]
+	value, err := s.rs.Get([]byte(key))
 	logger.Info("Get:", key)
-	if !ok {
+	if err == errors.ErrNotFound {
 		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, err
 	}
 	return value, nil
 }
@@ -75,7 +90,7 @@ func (s *StorageFSM) Snapshot() (raft.FSMSnapshot, error) {
 	defer s.l.Unlock()
 	logger.Info("Excute StorageFSM.Snapshot ...")
 	return &StorageSnapshot{
-		diskCache: s.cache,
+		diskStore: s.rs,
 	}, nil
 }
 
@@ -88,12 +103,14 @@ func (s *StorageFSM) Restore(inp io.ReadCloser) error {
 	hd := codec.MsgpackHandle{}
 	dec := codec.NewDecoder(inp, &hd)
 	s.cache = nil
+
 	return dec.Decode(&s.cache)
 }
 
 // StorageSnapshot .
 type StorageSnapshot struct {
 	diskCache map[string][]byte
+	diskStore RiotStorage
 }
 
 // Persist ...
@@ -101,13 +118,19 @@ func (s *StorageSnapshot) Persist(sink raft.SnapshotSink) error {
 	logger.Info("Excute StorageSnapshot.Persist ... ")
 	hd := codec.MsgpackHandle{}
 	enc := codec.NewEncoder(sink, &hd)
-
-	if err := enc.Encode(s.diskCache); err != nil {
-		sink.Close()
-		return err
+	c := s.diskStore.Rec()
+	defer sink.Close()
+	for {
+		iterm := <-c
+		if iterm.Err == nil {
+			if err := enc.Encode(iterm); err != nil {
+				return err
+			}
+		}
+		if iterm.Err == store.ErrFinished {
+			return nil
+		}
 	}
-	sink.Close()
-	return nil
 }
 
 // Release .
