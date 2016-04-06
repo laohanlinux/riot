@@ -1,14 +1,36 @@
 
-2016/03/30 18:47:31 cluster.go:119: [info] snap save dir:/tmp/raft344833806
+2016/03/31 09:47:30 cluster.go:119: [info] snap save dir:/tmp/raft289099100
 
-2016/03/30 18:47:31 cluster.go:72: [debug] SingleNode:true
+2016/03/31 09:47:30 cluster.go:72: [debug] SingleNode:true
 
-2016/03/30 18:47:31 cluster.go:76: [debug] peers:[]
+2016/03/31 09:47:30 cluster.go:76: [debug] peers:[]
 
-2016/03/30 18:47:34 admin_handler.go:122: [info] The Leader Name is :127.0.0.1:12000
+2016/03/31 09:47:33 admin_handler.go:127: [info] The Leader Name is :127.0.0.1:12000
 
-2016/03/30 18:47:34 admin_handler.go:128: [debug] 127.0.0.1:12001will join the cluster, leader is :127.0.0.1:12000
+2016/03/31 09:47:33 admin_handler.go:133: [debug] 127.0.0.1:12001will join the cluster, leader is :127.0.0.1:12000
 
-2016/03/30 18:47:36 admin_handler.go:122: [info] The Leader Name is :127.0.0.1:12000
+2016/03/31 09:47:35 admin_handler.go:127: [info] The Leader Name is :127.0.0.1:12000
 
-2016/03/30 18:47:36 admin_handler.go:128: [debug] 127.0.0.1:12002will join the cluster, leader is :127.0.0.1:12000
+2016/03/31 09:47:35 admin_handler.go:133: [debug] 127.0.0.1:12002will join the cluster, leader is :127.0.0.1:12000
+
+2016/03/31 09:47:49 admin_handler.go:167: [info] The Leader Name is :127.0.0.1:12000
+
+2016/03/31 09:47:49 admin_handler.go:173: [debug] :12002will be removed from the cluster, leader is :127.0.0.1:12000
+
+2016/03/31 09:47:49 admin_handler.go:69: [error] peer is unknown
+
+2016/03/31 09:53:27 admin_handler.go:167: [info] The Leader Name is :127.0.0.1:12000
+
+2016/03/31 09:53:27 admin_handler.go:173: [debug] 127.0.0.1:12002will be removed from the cluster, leader is :127.0.0.1:12000
+
+2016/03/31 09:55:55 admin_handler.go:127: [info] The Leader Name is :127.0.0.1:12000
+
+2016/03/31 09:55:55 admin_handler.go:133: [debug] 127.0.0.1:12002will join the cluster, leader is :127.0.0.1:12000
+
+2016/03/31 09:58:47 admin_handler.go:127: [info] The Leader Name is :127.0.0.1:12000
+
+2016/03/31 09:58:47 admin_handler.go:133: [debug] 127.0.0.1:12002will join the cluster, leader is :127.0.0.1:12000
+
+2016/03/31 10:02:21 admin_handler.go:167: [info] The Leader Name is :127.0.0.1:12000
+
+2016/03/31 10:02:21 admin_handler.go:173: [debug] 127.0.0.1:12002will be removed from the cluster, leader is :127.0.0.1:12000

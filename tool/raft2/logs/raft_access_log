@@ -1,6 +1,18 @@
 
-2016/03/30 18:47:35 cluster.go:119: [info] snap save dir:/tmp/raft516837168
+2016/03/31 09:47:34 cluster.go:119: [info] snap save dir:/tmp/raft105713200
 
-2016/03/30 18:47:35 cluster.go:76: [debug] peers:[]
+2016/03/31 09:47:34 cluster.go:76: [debug] peers:[]
 
-2016/03/30 18:47:36 riot.go:121: [info] {<nil> 0 0.000874305 {0 0 <nil>}}
+2016/03/31 09:47:35 riot.go:121: [info] {<nil> 0 0.000591223 {0 0 <nil>}}
+
+2016/03/31 09:55:54 cluster.go:119: [info] snap save dir:/tmp/raft525378895
+
+2016/03/31 09:55:54 cluster.go:76: [debug] peers:[127.0.0.1:12002]
+
+2016/03/31 09:55:55 riot.go:121: [info] {<nil> 0 0.000670441 {0 0 <nil>}}
+
+2016/03/31 09:58:46 cluster.go:119: [info] snap save dir:/tmp/raft552899838
+
+2016/03/31 09:58:46 cluster.go:76: [debug] peers:[127.0.0.1:12002 127.0.0.1:12000 127.0.0.1:12001]
+
+2016/03/31 09:58:47 riot.go:121: [info] {<nil> 0 0.00027627200000000004 {0 0 <nil>}}

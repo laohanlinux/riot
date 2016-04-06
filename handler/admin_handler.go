@@ -63,6 +63,11 @@ func AdminHandlerFunc(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			logger.Error(err)
 		}
+	case "DELETE":
+		msg.ErrCode, err = doDel(w, r)
+		if err != nil {
+			logger.Error(err)
+		}
 	default:
 	}
 }
@@ -104,9 +109,9 @@ func doPost(w http.ResponseWriter, r *http.Request) (int, error) {
 		return aNetErr, err
 	}
 	switch cmdAdmin {
-	// let the node(addr:port) join the cluster
+	// let the node(ip:port) join the cluster
 	case "join":
-		// {"addr:": "", "port":""}
+		// {"ip": "", "port":""}
 		var remoteAdd = make(map[string]string)
 		if err := json.Unmarshal(b, &remoteAdd); err != nil {
 			return aBytesErr, err
@@ -146,7 +151,7 @@ func doDel(w http.ResponseWriter, r *http.Request) (int, error) {
 	}
 	switch cmdAdmin {
 	case "remove":
-		// {"addr:": "", "port":""}
+		// {"ip": "", "port":""}
 		var remoteAdd = make(map[string]string)
 		if err := json.Unmarshal(b, &remoteAdd); err != nil {
 			return aBytesErr, err
@@ -160,7 +165,7 @@ func doDel(w http.ResponseWriter, r *http.Request) (int, error) {
 			return aNoLeaderErr, fmt.Errorf("No Leader In Cluster")
 		}
 		logger.Info("The Leader Name is :", leaderName)
-		// 2. make sure the leader is itself
+		// 2. make sure the leader is itself, can't not remove the leader node
 		if !strings.HasPrefix(leaderName, remoteAdd["addr"]) && remoteAdd["addr"] != "" {
 			return aNoLeaderErr, nil
 		}
