@@ -101,17 +101,3 @@ func (c *Cluster) Leader() string {
 func (c *Cluster) Get(key string) ([]byte, error) {
 	return c.FSM.Get(key)
 }
-func fileSnap(snapshotStorage string) (string, *raft.FileSnapshotStore) {
-	dir, err := ioutil.TempDir("", "raft")
-	if err != nil {
-		panic(err)
-	}
-
-	logger.Info("snap save dir:", dir)
-	snap, err := raft.NewFileSnapshotStore(dir, 3, nil)
-	if err != nil {
-		panic(err)
-	}
-
-	return dir, snap
-}

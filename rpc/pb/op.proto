@@ -1,14 +1,14 @@
 syntax = "proto3";
 
-package pb; 
+package pb;
 
 service RiotGossip {
     rpc OpRPC(OpRequest) returns (OpReply) {}
 }
 
 message OpRequest {
-    string op =1 ; 
-    string key= 2; 
+    string op = 1;
+    string key= 2;
     bytes value = 3;
 }
 

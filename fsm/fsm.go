@@ -16,6 +16,7 @@ import (
 )
 
 var ErrNotFound = fmt.Errorf("the key's value is nil.")
+var ErrInvalidCmd = fmt.Errorf("The command is invalid")
 
 //
 // const (
@@ -63,9 +64,8 @@ func (s *StorageFSM) Apply(log *raft.Log) interface{} {
 	case "DEL":
 		err = s.rs.Del([]byte(req.Key))
 	default:
-		return fmt.Errorf("%s is a invalid command", req.Op)
+		err = ErrInvalidCmd
 	}
-
 	return err
 }
 
@@ -96,13 +96,10 @@ func (s *StorageFSM) Snapshot() (raft.FSMSnapshot, error) {
 
 // Restore data from persit location
 func (s *StorageFSM) Restore(inp io.ReadCloser) error {
-	logger.Info("Excute StorageFSN.Restore ...")
+	logger.Info("Must clear old dirty data, Excute StorageFSN.Restore ...")
 	s.l.Lock()
 	defer s.l.Unlock()
 	defer inp.Close()
-	hd := codec.MsgpackHandle{}
-	dec := codec.NewDecoder(inp, &hd)
-	s.cache = nil
 
 	return dec.Decode(&s.cache)
 }
@@ -116,14 +113,15 @@ type StorageSnapshot struct {
 // Persist ...
 func (s *StorageSnapshot) Persist(sink raft.SnapshotSink) error {
 	logger.Info("Excute StorageSnapshot.Persist ... ")
-	hd := codec.MsgpackHandle{}
-	enc := codec.NewEncoder(sink, &hd)
-	c := s.diskStore.Rec()
 	defer sink.Close()
 	for {
 		iterm := <-c
 		if iterm.Err == nil {
-			if err := enc.Encode(iterm); err != nil {
+			data, err := json.Marshal(iterm)
+			if err != nil {
+				return err
+			}
+			if _, err = sink.Write(data); err != nil {
 				return err
 			}
 		}
@@ -146,6 +144,5 @@ func InmemConfig() *raft.Config {
 	conf.ElectionTimeout = 50 * time.Millisecond
 	conf.LeaderLeaseTimeout = 50 * time.Millisecond
 	conf.CommitTimeout = time.Millisecond
-	conf.EnableSingleNode = true
 	return conf
 }
