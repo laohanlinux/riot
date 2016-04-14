@@ -13,6 +13,7 @@ import (
 	"github.com/laohanlinux/riot/rpc/pb"
 	"github.com/laohanlinux/riot/store"
 	"github.com/syndtr/goleveldb/leveldb/errors"
+	"encoding/binary"
 )
 
 var ErrNotFound = fmt.Errorf("the key's value is nil.")
@@ -28,7 +29,6 @@ var ErrInvalidCmd = fmt.Errorf("The command is invalid")
 func NewStorageFSM(rs RiotStorage) *StorageFSM {
 	return &StorageFSM{
 		l:     &sync.Mutex{},
-		cache: make(map[string][]byte),
 		rs:    rs,
 	}
 }
@@ -37,7 +37,6 @@ func NewStorageFSM(rs RiotStorage) *StorageFSM {
 // storage the key/value logs sequentially
 type StorageFSM struct {
 	l     *sync.Mutex
-	cache map[string][]byte
 	rs    RiotStorage
 }
 
@@ -101,7 +100,35 @@ func (s *StorageFSM) Restore(inp io.ReadCloser) error {
 	defer s.l.Unlock()
 	defer inp.Close()
 
-	return dec.Decode(&s.cache)
+	bSizeBuf := make([]byte, 2)
+	iterm := store.Iterm{}
+	for {
+		_, err := inp.Read(bSizeBuf)
+		if err == io.EOF{
+			break
+		}
+		if err != nil {
+			panic(err)
+		}
+		bSize := int(binary.LittleEndian.Uint16(bSizeBuf))
+		buf := make([]byte, bSize)
+		_, err := inp.Read(buf)
+		if err == io.EOF{
+			break
+		}
+		if err != nil {
+			panic(err)
+		}
+		// decoding
+		if err = json.Unmarshal(buf, &iterm); err != nil {
+			panic(err)
+		}
+		if err = s.rs.Set(iterm.Key, iterm.Value); err != nil {
+			panic(err)
+		}
+	}
+
+	return return nil
 }
 
 // StorageSnapshot .
@@ -121,7 +148,11 @@ func (s *StorageSnapshot) Persist(sink raft.SnapshotSink) error {
 			if err != nil {
 				return err
 			}
-			if _, err = sink.Write(data); err != nil {
+			bSize := uint16(len(data))
+			buf := make([]byte, bSize+2)
+			binary.LittleEndian.PutUint32(buf[:2], bSize)
+			copy(buf[2:], data)
+			if _, err = sink.Write(buf); err != nil {
 				return err
 			}
 		}
