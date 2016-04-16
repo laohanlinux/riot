@@ -23,6 +23,7 @@ type RaftConfig struct {
 	Peers            []string `toml:"peers"`
 	PeerStorage      string   `toml:"peer_storage"`
 	SnapshotStorage  string   `toml:"snapshot_storage"`
+	StoreBackendPath string   `toml:"storage_backend_path"`
 	EnableSingleNode bool     `toml:"enable_single_node"`
 }
 
@@ -48,7 +49,13 @@ func NewConfig(data string) (*Configure, error) {
 	}
 
 	// Init Application Dir
-	dirs := []string{c.LogC.LogDir, c.RaftC.PeerStorage, c.RaftC.SnapshotStorage}
+	dirs := []string{
+		c.LogC.LogDir,
+		c.RaftC.PeerStorage,
+		c.RaftC.SnapshotStorage,
+		c.RaftC.StoreBackendPath,
+	}
+
 	for _, dir := range dirs {
 		if _, err := os.Stat(dir); err != nil && os.IsNotExist(err) {
 			if err := os.MkdirAll(dir, os.ModePerm); err != nil {

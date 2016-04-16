@@ -1,13 +1,15 @@
 package cluster
 
 import (
-	"io/ioutil"
+	//"io/ioutil"
 	"time"
 
 	"github.com/hashicorp/raft"
 	"github.com/laohanlinux/go-logger/logger"
 	"github.com/laohanlinux/riot/config"
 	"github.com/laohanlinux/riot/fsm"
+	rstore "github.com/laohanlinux/riot/store"
+	"os"
 )
 
 type Cluster struct {
@@ -39,7 +41,13 @@ func NewCluster(cfg *config.Configure, conf *raft.Config) *Cluster {
 	// rCluster.Dir = dir
 	// for log and config storage
 	rCluster.Stores = store
-	rCluster.FSM = fsm.NewStorageFSM()
+
+	// create a key/value store
+	if err := os.RemoveAll(cfg.RaftC.StoreBackendPath); err != nil {
+		logger.Fatal(err)
+	}
+ 	edbs := rstore.NewLeveldbStorage(cfg.RaftC.StoreBackendPath)
+	rCluster.FSM = fsm.NewStorageFSM(edbs)
 
 	//create snap dir
 	snap, err := raft.NewFileSnapshotStore(cfg.RaftC.SnapshotStorage, 3, nil)
@@ -60,11 +68,9 @@ func NewCluster(cfg *config.Configure, conf *raft.Config) *Cluster {
 
 	ps, err := peerStorage.Peers()
 	if cfg.RaftC.EnableSingleNode && len(ps) <= 1 {
-		logger.Debug("SingleNode:", true)
 		conf.EnableSingleNode = cfg.RaftC.EnableSingleNode
 		conf.DisableBootstrapAfterElect = false
 	}
-	logger.Debug("peers:", ps)
 	peerStorage.SetPeers(ps)
 
 	rCluster.PeerStorage = peerStorage

@@ -22,17 +22,16 @@ type Iterm struct {
 }
 
 // NewLeveldbStorage returns a dbstore
-func NewLeveldbStorage() *leveldbStorage {
+func NewLeveldbStorage(dir string) *leveldbStorage {
+	db, err := leveldb.OpenFile(dir, nil)
+	if err != nil {
+		panic(err)
+	}
 	return &leveldbStorage{
 		c: make(chan Iterm),
 		l: &sync.Mutex{},
+		DB: db,
 	}
-}
-
-func (edbs *leveldbStorage) Open(dir string) error {
-	db, err := leveldb.OpenFile(dir, nil)
-	edbs.DB = db
-	return err
 }
 
 func (edbs *leveldbStorage) Get(key []byte) ([]byte, error) {

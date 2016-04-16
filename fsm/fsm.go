@@ -7,7 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/hashicorp/go-msgpack/codec"
 	"github.com/hashicorp/raft"
 	"github.com/laohanlinux/go-logger/logger"
 	"github.com/laohanlinux/riot/rpc/pb"
@@ -112,7 +111,7 @@ func (s *StorageFSM) Restore(inp io.ReadCloser) error {
 		}
 		bSize := int(binary.LittleEndian.Uint16(bSizeBuf))
 		buf := make([]byte, bSize)
-		_, err := inp.Read(buf)
+		_, err = inp.Read(buf)
 		if err == io.EOF{
 			break
 		}
@@ -128,7 +127,7 @@ func (s *StorageFSM) Restore(inp io.ReadCloser) error {
 		}
 	}
 
-	return return nil
+	return  nil
 }
 
 // StorageSnapshot .
@@ -141,6 +140,8 @@ type StorageSnapshot struct {
 func (s *StorageSnapshot) Persist(sink raft.SnapshotSink) error {
 	logger.Info("Excute StorageSnapshot.Persist ... ")
 	defer sink.Close()
+	c := s.diskStore.Rec()
+
 	for {
 		iterm := <-c
 		if iterm.Err == nil {
@@ -150,7 +151,7 @@ func (s *StorageSnapshot) Persist(sink raft.SnapshotSink) error {
 			}
 			bSize := uint16(len(data))
 			buf := make([]byte, bSize+2)
-			binary.LittleEndian.PutUint32(buf[:2], bSize)
+			binary.LittleEndian.PutUint16(buf[:2], bSize)
 			copy(buf[2:], data)
 			if _, err = sink.Write(buf); err != nil {
 				return err

@@ -7,8 +7,9 @@ port = "8080"
 addr = "127.0.0.1"
 port = "12000"
 peers = ["127.0.0.1:12000", "127.0.0.1:12001", "127.0.0.1:12002"]
-peer_storage = "/tmp/raft/raft_peer_storage"
+peer_storage = "raft/raft_peer_storage"
 snapshot_storage = "raft/raft_snapshot_storage"
+storage_backend_path = "raft/storage_backend_path"
 enable_single_node = true
 
 [rpc] 
