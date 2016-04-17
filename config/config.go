@@ -24,6 +24,8 @@ type RaftConfig struct {
 	PeerStorage      string   `toml:"peer_storage"`
 	SnapshotStorage  string   `toml:"snapshot_storage"`
 	StoreBackendPath string   `toml:"storage_backend_path"`
+	RaftLogPath      string   `toml:"raft_log_path"`
+	ApplyLogPath     string   `toml:"apply_log_path"`
 	EnableSingleNode bool     `toml:"enable_single_node"`
 }
 
@@ -54,6 +56,8 @@ func NewConfig(data string) (*Configure, error) {
 		c.RaftC.PeerStorage,
 		c.RaftC.SnapshotStorage,
 		c.RaftC.StoreBackendPath,
+		c.RaftC.ApplyLogPath,
+		c.RaftC.RaftLogPath,
 	}
 
 	for _, dir := range dirs {

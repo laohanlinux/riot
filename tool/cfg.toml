@@ -10,6 +10,8 @@ peers = ["127.0.0.1:12000", "127.0.0.1:12001", "127.0.0.1:12002"]
 peer_storage = "raft/raft_peer_storage"
 snapshot_storage = "raft/raft_snapshot_storage"
 storage_backend_path = "raft/storage_backend_path"
+raft_log_path = "raft/raft_log_path"
+apply_log_path = "raft/apply_log_path"
 enable_single_node = true
 
 [rpc] 

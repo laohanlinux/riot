@@ -72,7 +72,6 @@ func (s *StorageFSM) Get(key string) ([]byte, error) {
 	s.l.Lock()
 	defer s.l.Unlock()
 	value, err := s.rs.Get([]byte(key))
-	logger.Info("Get:", key)
 	if err == errors.ErrNotFound {
 		return nil, ErrNotFound
 	}

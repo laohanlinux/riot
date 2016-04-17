@@ -1,15 +1,16 @@
 package cluster
 
 import (
-	//"io/ioutil"
 	"time"
+	"path"
+	"os"
 
 	"github.com/hashicorp/raft"
 	"github.com/laohanlinux/go-logger/logger"
 	"github.com/laohanlinux/riot/config"
 	"github.com/laohanlinux/riot/fsm"
+	"github.com/hashicorp/raft-boltdb"
 	rstore "github.com/laohanlinux/riot/store"
-	"os"
 )
 
 type Cluster struct {
@@ -36,17 +37,15 @@ func NewCluster(cfg *config.Configure, conf *raft.Config) *Cluster {
 	}
 	rCluster = &Cluster{}
 
-	// create log store dir, may be use disk
 	store := raft.NewInmemStore()
-	// rCluster.Dir = dir
-	// for log and config storage
 	rCluster.Stores = store
-
+	// init raft applog and raftlog 
+	applyStore := initRaftLog(cfg, conf)
 	// create a key/value store
 	if err := os.RemoveAll(cfg.RaftC.StoreBackendPath); err != nil {
 		logger.Fatal(err)
 	}
- 	edbs := rstore.NewLeveldbStorage(cfg.RaftC.StoreBackendPath)
+	edbs := rstore.NewLeveldbStorage(cfg.RaftC.StoreBackendPath)
 	rCluster.FSM = fsm.NewStorageFSM(edbs)
 
 	//create snap dir
@@ -71,17 +70,17 @@ func NewCluster(cfg *config.Configure, conf *raft.Config) *Cluster {
 		conf.EnableSingleNode = cfg.RaftC.EnableSingleNode
 		conf.DisableBootstrapAfterElect = false
 	}
+
 	peerStorage.SetPeers(ps)
 
 	rCluster.PeerStorage = peerStorage
 	// Wait the transport
-	r, err := raft.NewRaft(conf, rCluster.FSM, store, store, snap, peerStorage, tran)
+	r, err := raft.NewRaft(conf, rCluster.FSM, applyStore, applyStore, snap, peerStorage, tran)
 	if err != nil {
 		logger.Fatal(err)
 	}
 	rCluster.R = r
 
-	//go rCluster.LeaderChange()
 	return rCluster
 }
 
@@ -106,4 +105,21 @@ func (c *Cluster) Leader() string {
 
 func (c *Cluster) Get(key string) ([]byte, error) {
 	return c.FSM.Get(key)
+}
+
+func initRaftLog(cfg *config.Configure, conf * raft.Config)*raftboltdb.BoltStore{
+	// init raft app log 
+	logFile := path.Join(cfg.RaftC.RaftLogPath, "raft.log")
+	fp, err := os.OpenFile(logFile, os.O_WRONLY | os.O_CREATE| os.O_APPEND, 0644)
+	if err != nil {
+		panic(err)
+	}
+	conf.LogOutput = fp	
+	// init raft apply log 
+	raftDBPath := path.Join(cfg.RaftC.ApplyLogPath, "apply.log")
+	bdb, err := raftboltdb.NewBoltStore(raftDBPath)
+	if err != nil {
+		panic(err)
+	}
+	return bdb
 }

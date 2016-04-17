@@ -79,6 +79,7 @@ func main() {
 		// Init raft server
 		rc := raft.DefaultConfig()
 
+
 		if joinAddr != "" {
 			go join(cfg)
 		}
