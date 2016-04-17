@@ -7,12 +7,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/hashicorp/raft"
-	"github.com/laohanlinux/go-logger/logger"
 	"github.com/laohanlinux/riot/rpc/pb"
 	"github.com/laohanlinux/riot/store"
-	"github.com/syndtr/goleveldb/leveldb/errors"
+
 	"encoding/binary"
+
+	"github.com/hashicorp/raft"
+	"github.com/laohanlinux/go-logger/logger"
+	"github.com/syndtr/goleveldb/leveldb/errors"
 )
 
 var ErrNotFound = fmt.Errorf("the key's value is nil.")
@@ -20,16 +22,16 @@ var ErrInvalidCmd = fmt.Errorf("The command is invalid")
 
 func NewStorageFSM(rs RiotStorage) *StorageFSM {
 	return &StorageFSM{
-		l:     &sync.Mutex{},
-		rs:    rs,
+		l:  &sync.Mutex{},
+		rs: rs,
 	}
 }
 
 // StorageFSM is an implememtation of the FSM interfacec, and just
 // storage the key/value logs sequentially
 type StorageFSM struct {
-	l     *sync.Mutex
-	rs    RiotStorage
+	l  *sync.Mutex
+	rs RiotStorage
 }
 
 // Apply is noly call in out with master leader
@@ -40,7 +42,7 @@ type StorageFSM struct {
 func (s *StorageFSM) Apply(log *raft.Log) interface{} {
 	s.l.Lock()
 	defer s.l.Unlock()
-	//logger.Info("Excute StorageFSM.Apply ...")
+	logger.Info("Excute StorageFSM.Apply ...")
 	var req pb.OpRequest
 	if err := json.Unmarshal(log.Data, &req); err != nil {
 		logger.Fatal(err)
@@ -93,7 +95,7 @@ func (s *StorageFSM) Restore(inp io.ReadCloser) error {
 	iterm := store.Iterm{}
 	for {
 		_, err := inp.Read(bSizeBuf)
-		if err == io.EOF{
+		if err == io.EOF {
 			break
 		}
 		if err != nil {
@@ -102,7 +104,7 @@ func (s *StorageFSM) Restore(inp io.ReadCloser) error {
 		bSize := int(binary.LittleEndian.Uint16(bSizeBuf))
 		buf := make([]byte, bSize)
 		_, err = inp.Read(buf)
-		if err == io.EOF{
+		if err == io.EOF {
 			break
 		}
 		if err != nil {
@@ -117,7 +119,7 @@ func (s *StorageFSM) Restore(inp io.ReadCloser) error {
 		}
 	}
 
-	return  nil
+	return nil
 }
 
 // StorageSnapshot .

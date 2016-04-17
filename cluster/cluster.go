@@ -1,15 +1,16 @@
 package cluster
 
 import (
-	"time"
-	"path"
 	"os"
+	"path"
+	"strings"
+	"time"
 
 	"github.com/hashicorp/raft"
+	"github.com/hashicorp/raft-boltdb"
 	"github.com/laohanlinux/go-logger/logger"
 	"github.com/laohanlinux/riot/config"
 	"github.com/laohanlinux/riot/fsm"
-	"github.com/hashicorp/raft-boltdb"
 	rstore "github.com/laohanlinux/riot/store"
 )
 
@@ -39,7 +40,7 @@ func NewCluster(cfg *config.Configure, conf *raft.Config) *Cluster {
 
 	store := raft.NewInmemStore()
 	rCluster.Stores = store
-	// init raft applog and raftlog 
+	// init raft applog and raftlog
 	applyStore := initRaftLog(cfg, conf)
 	// create a key/value store
 	if err := os.RemoveAll(cfg.RaftC.StoreBackendPath); err != nil {
@@ -91,12 +92,48 @@ func (c *Cluster) Status() string {
 	return c.R.State().String()
 }
 
-func (c *Cluster) LeaderChange() {
-	for {
-		logger.Info("leader is: ", c.R.Leader())
-		<-c.R.LeaderCh()
-		logger.Info("leader change to ", c.R.Leader())
-	}
+func (c *Cluster) LeaderChange(cfg *config.Configure) {
+	go func() {
+		for {
+			time.Sleep(time.Second * 3)
+			leaderName := c.R.Leader()
+			logger.Debug(leaderName)
+			if leaderName == "" {
+				continue
+			}
+			oldLeaderName := cfg.LeaderRpcC.Addr + ":" + cfg.LeaderRpcC.Port
+			logger.Debug(oldLeaderName)
+			if oldLeaderName == leaderName {
+				continue
+			}
+			addr := strings.Split(leaderName, ":")
+			// url := fmt.Sprintf("http://%s:%s/admin/lrpc", addr[0], cfg.SC.Port)
+			// logger.Info("lrpc request:", url)
+			// resp, err := http.Get(url)
+			// if err != nil {
+			// 	logger.Error(err)
+			// 	continue
+			// }
+			// rmsg := msgpack.ResponseMsg{}
+			// b, err := ioutil.ReadAll(resp.Body)
+			// if err != nil {
+			// 	logger.Error(err)
+			// 	resp.Body.Close()
+			// 	continue
+			// }
+			// err = json.Unmarshal(b, &rmsg)
+			// if err != nil {
+			// 	logger.Error(err)
+			// 	resp.Body.Close()
+			// 	continue
+			// }
+			// resp.Body.Close()
+			// logger.Info(rmsg)
+			// addr = strings.Split(fmt.Sprintf("%s", rmsg.Results), ":")
+			cfg.LeaderRpcC.Addr, cfg.LeaderRpcC.Port = addr[0], cfg.RpcC.Port
+			logger.Info("leader change to ", addr, leaderName)
+		}
+	}()
 }
 
 func (c *Cluster) Leader() string {
@@ -107,15 +144,15 @@ func (c *Cluster) Get(key string) ([]byte, error) {
 	return c.FSM.Get(key)
 }
 
-func initRaftLog(cfg *config.Configure, conf * raft.Config)*raftboltdb.BoltStore{
-	// init raft app log 
+func initRaftLog(cfg *config.Configure, conf *raft.Config) *raftboltdb.BoltStore {
+	// init raft app log
 	logFile := path.Join(cfg.RaftC.RaftLogPath, "raft.log")
-	fp, err := os.OpenFile(logFile, os.O_WRONLY | os.O_CREATE| os.O_APPEND, 0644)
+	fp, err := os.OpenFile(logFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
 		panic(err)
 	}
-	conf.LogOutput = fp	
-	// init raft apply log 
+	conf.LogOutput = fp
+	// init raft apply log
 	raftDBPath := path.Join(cfg.RaftC.ApplyLogPath, "apply.log")
 	bdb, err := raftboltdb.NewBoltStore(raftDBPath)
 	if err != nil {

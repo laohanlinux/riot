@@ -47,7 +47,6 @@ func (rcs *RiotRPCService) OpRPC(ctx context.Context, r *pb.OpRequest) (*pb.OpRe
 			Msg:     fmt.Sprintf("%v", err),
 		}, nil
 	}
-
 	return &pb.OpReply{
 		Status:  1,
 		ErrCode: Ok,

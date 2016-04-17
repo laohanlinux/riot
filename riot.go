@@ -15,6 +15,7 @@ import (
 	"github.com/laohanlinux/riot/cluster"
 	"github.com/laohanlinux/riot/config"
 	"github.com/laohanlinux/riot/handler"
+	"github.com/laohanlinux/riot/handler/msgpack"
 	"github.com/laohanlinux/riot/rpc"
 
 	"github.com/hashicorp/raft"
@@ -79,13 +80,13 @@ func main() {
 		// Init raft server
 		rc := raft.DefaultConfig()
 
-
 		if joinAddr != "" {
 			go join(cfg)
 		}
 		// rc.EnableSingleNode = true
-		cluster.NewCluster(cfg, rc)
-
+		c := cluster.NewCluster(cfg, rc)
+		// waitting for leader
+		c.LeaderChange(cfg)
 		m := mux.NewRouter()
 		m.Handle("/riot", &handler.RiotHandler{})
 		m.HandleFunc("/admin/{cmd}", handler.AdminHandlerFunc)
@@ -99,7 +100,7 @@ func main() {
 }
 
 func join(cfg *config.Configure) {
-	var results handler.ResponseMsg
+	var results msgpack.ResponseMsg
 	for {
 		time.Sleep(time.Second)
 		b, _ := json.Marshal(map[string]string{"ip": cfg.RaftC.Addr, "port": cfg.RaftC.Port})

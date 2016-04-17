@@ -17,6 +17,11 @@ type RpcConfig struct {
 	Port string `toml:"port"`
 }
 
+type LeaderRpcConfig struct {
+	Addr string
+	Port string
+}
+
 type RaftConfig struct {
 	Addr             string   `toml:"addr"`
 	Port             string   `toml:"port"`
@@ -35,10 +40,11 @@ type LogConfig struct {
 }
 
 type Configure struct {
-	SC    ServerConfig `toml:"server"`
-	RpcC  RpcConfig    `toml:"rpc"`
-	RaftC RaftConfig   `toml:"raft"`
-	LogC  LogConfig    `toml:"log"`
+	SC         ServerConfig `toml:"server"`
+	LeaderRpcC LeaderRpcConfig
+	RpcC       RpcConfig  `toml:"rpc"`
+	RaftC      RaftConfig `toml:"raft"`
+	LogC       LogConfig  `toml:"log"`
 }
 
 var c *Configure
@@ -49,7 +55,7 @@ func NewConfig(data string) (*Configure, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	c.RpcC.Addr = c.RaftC.Addr
 	// Init Application Dir
 	dirs := []string{
 		c.LogC.LogDir,
@@ -77,5 +83,6 @@ func GetConfigure() *Configure {
 func (c *Configure) Info() {
 	fmt.Printf("raft: %v\n", c.RaftC)
 	fmt.Printf("rpc: %v\n", c.RpcC)
+	fmt.Printf("leader rpc: %v\n", c.LeaderRpcC)
 	fmt.Printf("server:%v\n", c.SC)
 }

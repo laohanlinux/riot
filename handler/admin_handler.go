@@ -8,10 +8,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/hashicorp/raft"
 	"github.com/laohanlinux/go-logger/logger"
 	"github.com/laohanlinux/riot/cluster"
+	"github.com/laohanlinux/riot/config"
+	"github.com/laohanlinux/riot/handler/msgpack"
 
+	"github.com/hashicorp/raft"
 	"github.com/laohanlinux/mux"
 )
 
@@ -24,29 +26,21 @@ const (
 	aUnkownCmdErr //
 )
 
-type ResponseMsg struct {
-	Results interface{} `json:"results, omitempty"`
-	ErrCode int         `json:"error, omitempty"`
-	Time    float64     `json:"time,omitempty"`
-	start   time.Time
-}
-
-func (msg *ResponseMsg) JsonToBytes(errCode ...int) []byte {
-	if len(errCode) > 0 {
-		msg.ErrCode = errCode[0]
-	}
-	b, _ := json.Marshal(msg)
-	return b
-}
+// type ResponseMsg struct {
+// 	Results interface{} `json:"results, omitempty"`
+// 	ErrCode int         `json:"error, omitempty"`
+// 	Time    float64     `json:"time,omitempty"`
+// 	start   time.Time
+// }
 
 func AdminHandlerFunc(w http.ResponseWriter, r *http.Request) {
-	msg := ResponseMsg{
+	start := time.Now()
+	msg := msgpack.ResponseMsg{
 		ErrCode: 0,
-		start:   time.Now(),
 	}
 
-	defer func(msg *ResponseMsg) {
-		msg.Time = time.Now().Sub(msg.start).Seconds()
+	defer func(msg *msgpack.ResponseMsg) {
+		msg.Time = time.Now().Sub(start).Seconds()
 		w.Write(msg.JsonToBytes())
 	}(&msg)
 
@@ -96,6 +90,9 @@ func doGet(w http.ResponseWriter, r *http.Request) (int, interface{}, error) {
 	case "status":
 		status := cluster.SingleCluster().Status()
 		return aErrOk, status, nil
+	case "lrpc":
+		cfg := config.GetConfigure()
+		return aErrOk, fmt.Sprintf("%s:%s", cfg.RpcC.Addr, cfg.RpcC.Port), nil
 	default:
 		return aUnkownCmdErr, nil, fmt.Errorf("%s is unkown cmd", cmdAdmin)
 	}

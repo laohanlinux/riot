@@ -27,20 +27,21 @@ func NewRiotRPCClient() *RiotRPCClient {
 	return rc
 }
 
-func (rc *RiotRPCClient) RPCRequest(rpcAdrr string, r *pb.OpRequest) (*pb.OpReply, error) {
+func (rc *RiotRPCClient) RPCRequest(rpcAddr string, r *pb.OpRequest) (*pb.OpReply, error) {
 	rc.l.Lock()
 	var err error
-	conn, ok := rc.conn[rpcAdrr]
+	conn, ok := rc.conn[rpcAddr]
 	if !ok {
 		logger.Warn("New RPC Connect...")
-		conn, err = grpc.Dial(rpcAdrr, grpc.WithInsecure())
+		conn, err = grpc.Dial(rpcAddr, grpc.WithInsecure())
 		if err != nil {
 			rc.l.Unlock()
 			return nil, err
 		}
-		rc.conn[rpcAdrr] = conn
+		rc.conn[rpcAddr] = conn
 	}
 	rc.l.Unlock()
+	logger.Info("leader addr:", rpcAddr)
 	client := pb.NewRiotGossipClient(conn)
 	return client.OpRPC(context.Background(), r)
 }
