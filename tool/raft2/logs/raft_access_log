@@ -1,18 +1,266 @@
 
-2016/03/31 09:47:34 cluster.go:119: [info] snap save dir:/tmp/raft105713200
+2016/04/17 17:43:36 riot.go:122: [info] {<nil> 0 0.0022294280000000003 {0 0 <nil>}}
 
-2016/03/31 09:47:34 cluster.go:76: [debug] peers:[]
+2016/04/17 17:45:13 fsm.go:51: [info] Excute StorageFSM.Apply ...
 
-2016/03/31 09:47:35 riot.go:121: [info] {<nil> 0 0.000591223 {0 0 <nil>}}
+2016/04/17 17:45:13 fsm.go:60: [info] Set:/riot?key=1[49]
 
-2016/03/31 09:55:54 cluster.go:119: [info] snap save dir:/tmp/raft525378895
+2016/04/17 17:45:13 fsm.go:51: [info] Excute StorageFSM.Apply ...
 
-2016/03/31 09:55:54 cluster.go:76: [debug] peers:[127.0.0.1:12002]
+2016/04/17 17:45:13 fsm.go:60: [info] Set:/riot?key=2[50]
 
-2016/03/31 09:55:55 riot.go:121: [info] {<nil> 0 0.000670441 {0 0 <nil>}}
+2016/04/17 17:45:13 fsm.go:51: [info] Excute StorageFSM.Apply ...
 
-2016/03/31 09:58:46 cluster.go:119: [info] snap save dir:/tmp/raft552899838
+2016/04/17 17:45:13 fsm.go:60: [info] Set:/riot?key=3[51]
 
-2016/03/31 09:58:46 cluster.go:76: [debug] peers:[127.0.0.1:12002 127.0.0.1:12000 127.0.0.1:12001]
+2016/04/17 17:45:13 fsm.go:51: [info] Excute StorageFSM.Apply ...
 
-2016/03/31 09:58:47 riot.go:121: [info] {<nil> 0 0.00027627200000000004 {0 0 <nil>}}
+2016/04/17 17:45:13 fsm.go:60: [info] Set:/riot?key=4[52]
+
+2016/04/17 17:45:13 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:13 fsm.go:60: [info] Set:/riot?key=5[53]
+
+2016/04/17 17:45:13 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:13 fsm.go:60: [info] Set:/riot?key=6[54]
+
+2016/04/17 17:45:13 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:13 fsm.go:60: [info] Set:/riot?key=7[55]
+
+2016/04/17 17:45:13 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:13 fsm.go:60: [info] Set:/riot?key=8[56]
+
+2016/04/17 17:45:13 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:13 fsm.go:60: [info] Set:/riot?key=9[57]
+
+2016/04/17 17:45:13 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:13 fsm.go:60: [info] Set:/riot?key=10[49 48]
+
+2016/04/17 17:45:13 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:13 fsm.go:60: [info] Set:/riot?key=11[49 49]
+
+2016/04/17 17:45:13 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:13 fsm.go:60: [info] Set:/riot?key=12[49 50]
+
+2016/04/17 17:45:13 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:13 fsm.go:60: [info] Set:/riot?key=13[49 51]
+
+2016/04/17 17:45:13 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:13 fsm.go:60: [info] Set:/riot?key=14[49 52]
+
+2016/04/17 17:45:13 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:13 fsm.go:60: [info] Set:/riot?key=15[49 53]
+
+2016/04/17 17:45:13 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:13 fsm.go:60: [info] Set:/riot?key=16[49 54]
+
+2016/04/17 17:45:13 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:13 fsm.go:60: [info] Set:/riot?key=17[49 55]
+
+2016/04/17 17:45:13 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:13 fsm.go:60: [info] Set:/riot?key=18[49 56]
+
+2016/04/17 17:45:13 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:13 fsm.go:60: [info] Set:/riot?key=19[49 57]
+
+2016/04/17 17:45:13 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:13 fsm.go:60: [info] Set:/riot?key=20[50 48]
+
+2016/04/17 17:45:13 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:13 fsm.go:60: [info] Set:/riot?key=21[50 49]
+
+2016/04/17 17:45:13 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:13 fsm.go:60: [info] Set:/riot?key=22[50 50]
+
+2016/04/17 17:45:13 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:13 fsm.go:60: [info] Set:/riot?key=23[50 51]
+
+2016/04/17 17:45:13 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:13 fsm.go:60: [info] Set:/riot?key=24[50 52]
+
+2016/04/17 17:45:13 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:13 fsm.go:60: [info] Set:/riot?key=25[50 53]
+
+2016/04/17 17:45:13 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:13 fsm.go:60: [info] Set:/riot?key=26[50 54]
+
+2016/04/17 17:45:13 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:13 fsm.go:60: [info] Set:/riot?key=27[50 55]
+
+2016/04/17 17:45:13 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:13 fsm.go:60: [info] Set:/riot?key=28[50 56]
+
+2016/04/17 17:45:13 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:13 fsm.go:60: [info] Set:/riot?key=29[50 57]
+
+2016/04/17 17:45:13 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:13 fsm.go:60: [info] Set:/riot?key=30[51 48]
+
+2016/04/17 17:45:13 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:13 fsm.go:60: [info] Set:/riot?key=31[51 49]
+
+2016/04/17 17:45:13 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:13 fsm.go:60: [info] Set:/riot?key=32[51 50]
+
+2016/04/17 17:45:13 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:13 fsm.go:60: [info] Set:/riot?key=33[51 51]
+
+2016/04/17 17:45:13 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:13 fsm.go:60: [info] Set:/riot?key=34[51 52]
+
+2016/04/17 17:45:13 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:13 fsm.go:60: [info] Set:/riot?key=35[51 53]
+
+2016/04/17 17:45:13 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:13 fsm.go:60: [info] Set:/riot?key=36[51 54]
+
+2016/04/17 17:45:13 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:13 fsm.go:60: [info] Set:/riot?key=37[51 55]
+
+2016/04/17 17:45:13 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:13 fsm.go:60: [info] Set:/riot?key=38[51 56]
+
+2016/04/17 17:45:13 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:13 fsm.go:60: [info] Set:/riot?key=39[51 57]
+
+2016/04/17 17:45:13 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:13 fsm.go:60: [info] Set:/riot?key=40[52 48]
+
+2016/04/17 17:45:13 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:13 fsm.go:60: [info] Set:/riot?key=41[52 49]
+
+2016/04/17 17:45:13 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:13 fsm.go:60: [info] Set:/riot?key=42[52 50]
+
+2016/04/17 17:45:13 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:13 fsm.go:60: [info] Set:/riot?key=43[52 51]
+
+2016/04/17 17:45:14 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:14 fsm.go:60: [info] Set:/riot?key=44[52 52]
+
+2016/04/17 17:45:14 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:14 fsm.go:60: [info] Set:/riot?key=45[52 53]
+
+2016/04/17 17:45:14 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:14 fsm.go:60: [info] Set:/riot?key=46[52 54]
+
+2016/04/17 17:45:14 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:14 fsm.go:60: [info] Set:/riot?key=47[52 55]
+
+2016/04/17 17:45:14 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:14 fsm.go:60: [info] Set:/riot?key=48[52 56]
+
+2016/04/17 17:45:14 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:14 fsm.go:60: [info] Set:/riot?key=49[52 57]
+
+2016/04/17 17:45:14 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:14 fsm.go:60: [info] Set:/riot?key=50[53 48]
+
+2016/04/17 17:45:14 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:14 fsm.go:60: [info] Set:/riot?key=51[53 49]
+
+2016/04/17 17:45:14 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:14 fsm.go:60: [info] Set:/riot?key=52[53 50]
+
+2016/04/17 17:45:14 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:14 fsm.go:60: [info] Set:/riot?key=53[53 51]
+
+2016/04/17 17:45:14 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:14 fsm.go:60: [info] Set:/riot?key=54[53 52]
+
+2016/04/17 17:45:14 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:14 fsm.go:60: [info] Set:/riot?key=55[53 53]
+
+2016/04/17 17:45:14 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:14 fsm.go:60: [info] Set:/riot?key=56[53 54]
+
+2016/04/17 17:45:14 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:14 fsm.go:60: [info] Set:/riot?key=57[53 55]
+
+2016/04/17 17:45:14 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:14 fsm.go:60: [info] Set:/riot?key=58[53 56]
+
+2016/04/17 17:45:14 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:14 fsm.go:60: [info] Set:/riot?key=59[53 57]
+
+2016/04/17 17:45:14 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:14 fsm.go:60: [info] Set:/riot?key=60[54 48]
+
+2016/04/17 17:45:14 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:14 fsm.go:60: [info] Set:/riot?key=61[54 49]
+
+2016/04/17 17:45:14 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:14 fsm.go:60: [info] Set:/riot?key=62[54 50]
+
+2016/04/17 17:45:14 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:14 fsm.go:60: [info] Set:/riot?key=63[54 51]
+
+2016/04/17 17:45:14 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:14 fsm.go:60: [info] Set:/riot?key=64[54 52]
+
+2016/04/17 17:45:14 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:14 fsm.go:60: [info] Set:/riot?key=65[54 53]
+
+2016/04/17 17:45:14 fsm.go:51: [info] Excute StorageFSM.Apply ...
+
+2016/04/17 17:45:14 fsm.go:60: [info] Set:/riot?key=66[54 54]

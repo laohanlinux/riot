@@ -18,13 +18,6 @@ import (
 var ErrNotFound = fmt.Errorf("the key's value is nil.")
 var ErrInvalidCmd = fmt.Errorf("The command is invalid")
 
-//
-// const (
-// 	AppendAction = "rebuild the storage."
-// 	CreateAction = "create a new db if the db is not exist"
-// 	TruncAction  = "create a new db"
-// )
-
 func NewStorageFSM(rs RiotStorage) *StorageFSM {
 	return &StorageFSM{
 		l:     &sync.Mutex{},
@@ -47,8 +40,7 @@ type StorageFSM struct {
 func (s *StorageFSM) Apply(log *raft.Log) interface{} {
 	s.l.Lock()
 	defer s.l.Unlock()
-
-	logger.Info("Excute StorageFSM.Apply ...")
+	//logger.Info("Excute StorageFSM.Apply ...")
 	var req pb.OpRequest
 	if err := json.Unmarshal(log.Data, &req); err != nil {
 		logger.Fatal(err)
@@ -57,7 +49,6 @@ func (s *StorageFSM) Apply(log *raft.Log) interface{} {
 	var err error
 	switch req.Op {
 	case "SET":
-		logger.Info("Set:", req.Key, req.Value)
 		err = s.rs.Set([]byte(req.Key), req.Value)
 	case "DEL":
 		err = s.rs.Del([]byte(req.Key))
@@ -85,7 +76,7 @@ func (s *StorageFSM) Get(key string) ([]byte, error) {
 func (s *StorageFSM) Snapshot() (raft.FSMSnapshot, error) {
 	s.l.Lock()
 	defer s.l.Unlock()
-	logger.Info("Excute StorageFSM.Snapshot ...")
+	//logger.Info("Excute StorageFSM.Snapshot ...")
 	return &StorageSnapshot{
 		diskStore: s.rs,
 	}, nil
@@ -93,7 +84,7 @@ func (s *StorageFSM) Snapshot() (raft.FSMSnapshot, error) {
 
 // Restore data from persit location
 func (s *StorageFSM) Restore(inp io.ReadCloser) error {
-	logger.Info("Must clear old dirty data, Excute StorageFSN.Restore ...")
+	//logger.Info("Must clear old dirty data, Excute StorageFSN.Restore ...")
 	s.l.Lock()
 	defer s.l.Unlock()
 	defer inp.Close()
@@ -137,7 +128,7 @@ type StorageSnapshot struct {
 
 // Persist ...
 func (s *StorageSnapshot) Persist(sink raft.SnapshotSink) error {
-	logger.Info("Excute StorageSnapshot.Persist ... ")
+	//logger.Info("Excute StorageSnapshot.Persist ... ")
 	defer sink.Close()
 	c := s.diskStore.Rec()
 

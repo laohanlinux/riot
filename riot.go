@@ -96,7 +96,6 @@ func main() {
 	}()
 
 	gGroup.Wait()
-	fmt.Println("raft has exited")
 }
 
 func join(cfg *config.Configure) {

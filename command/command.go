@@ -1,7 +1,7 @@
 package command
 
 import (
-	"fmt"
+	//"fmt"
 	"strings"
 
 	"github.com/laohanlinux/riot/cluster"
@@ -32,7 +32,6 @@ func (cm Command) DoGet() ([]byte, error) {
 func (cm Command) DoSet() error {
 	c := cluster.SingleCluster()
 	addr := strings.Split(c.Leader(), ":")
-	fmt.Println(addr)
 	cfg := config.GetConfigure()
 	rpcAddr := addr[0] + ":" + cfg.RpcC.Port
 	opRequest := pb.OpRequest{

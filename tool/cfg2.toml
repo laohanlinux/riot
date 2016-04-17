@@ -9,6 +9,9 @@ port = "12002"
 peers = ["127.0.0.1:12002"]
 peer_storage = "raft2/raft_peer_storage"
 snapshot_storage = "raft2/raft_snapshot_storage"
+storage_backend_path = "raft2/storage_backend_path"
+raft_log_path = "raft2/raft_log_path"
+apply_log_path = "raft2/apply_log_path"
 enable_single_node = false 
 
 [rpc]
