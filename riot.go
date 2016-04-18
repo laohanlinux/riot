@@ -13,10 +13,13 @@ import (
 	"time"
 
 	"github.com/laohanlinux/riot/cluster"
+	"github.com/laohanlinux/riot/command"
 	"github.com/laohanlinux/riot/config"
 	"github.com/laohanlinux/riot/handler"
 	"github.com/laohanlinux/riot/handler/msgpack"
 	"github.com/laohanlinux/riot/rpc"
+	"github.com/laohanlinux/riot/rpc/pb"
+	"github.com/laohanlinux/riot/share"
 
 	"github.com/hashicorp/raft"
 	"github.com/laohanlinux/go-logger/logger"
@@ -85,6 +88,7 @@ func main() {
 		}
 		// rc.EnableSingleNode = true
 		c := cluster.NewCluster(cfg, rc)
+		updateShareMemory(cfg)
 		// waitting for leader
 		c.LeaderChange(cfg)
 		m := mux.NewRouter()
@@ -122,4 +126,50 @@ func join(cfg *config.Configure) {
 		logger.Info(results)
 		return
 	}
+}
+
+func updateShareMemory(cfg *config.Configure) {
+
+	go func() {
+		var sc share.ShareCache
+		sc.LRPC = &share.LeaderRpcAddr{
+			Addr: "",
+			Port: "",
+		}
+
+		for {
+			time.Sleep(time.Second * 3)
+			oddr, oport := share.ShCache.LRPC.Addr, share.ShCache.LRPC.Port
+			oddr1, oprt1 := cfg.LeaderRpcC.Addr, cfg.LeaderRpcC.Port
+			if (oddr+oport) == (oddr1+oprt1) && oddr != "" {
+				continue
+			}
+			// old not equall new or old is empty
+			logger.Info(cfg.LeaderRpcC, string(share.ShCache.ToBytes()))
+			// update data by leader node
+			cfg.LeaderRpcC.Addr = oddr
+			cfg.LeaderRpcC.Port = oport
+			leaderAddr := cluster.SingleCluster().R.Leader()
+			cfg.LeaderRpcC.Addr = oddr
+			cfg.LeaderRpcC.Port = oport
+
+			if leaderAddr != (cfg.RaftC.Addr + ":" + cfg.RaftC.Port) {
+				logger.Info("不是leader, leader:", leaderAddr, cfg.RaftC.Addr+":"+cfg.RaftC.Port)
+				continue
+			}
+			// encode ShareCache
+			sc.LRPC.Addr = cfg.RpcC.Addr
+			sc.LRPC.Port = cfg.RpcC.Port
+			opRequest := pb.OpRequest{
+				Op:    command.CmdShare,
+				Key:   "",
+				Value: sc.ToBytes(),
+			}
+			b, _ := json.Marshal(opRequest)
+			err := cluster.SingleCluster().R.Apply(b, 3)
+			if err != nil {
+				logger.Error(err)
+			}
+		}
+	}()
 }

@@ -12,9 +12,10 @@ import (
 
 // ....
 const (
-	CmdGet = "GET"
-	CmdSet = "SET"
-	CmdDel = "DEL"
+	CmdGet   = "GET"
+	CmdSet   = "SET"
+	CmdDel   = "DEL"
+	CmdShare = "SHARE"
 )
 
 type Command struct {

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/laohanlinux/riot/rpc/pb"
+	"github.com/laohanlinux/riot/share"
 	"github.com/laohanlinux/riot/store"
 
 	"encoding/binary"
@@ -54,6 +55,15 @@ func (s *StorageFSM) Apply(log *raft.Log) interface{} {
 		err = s.rs.Set([]byte(req.Key), req.Value)
 	case "DEL":
 		err = s.rs.Del([]byte(req.Key))
+	case "SHARE":
+		logger.Debug("更新共享内存.")
+		var shareCache share.ShareCache
+		err = json.Unmarshal(req.Value, shareCache)
+		if err != nil {
+			return err
+		}
+		share.ShCache.LRPC.Addr = shareCache.LRPC.Addr
+		share.ShCache.LRPC.Port = shareCache.LRPC.Port
 	default:
 		err = ErrInvalidCmd
 	}

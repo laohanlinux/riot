@@ -3,15 +3,15 @@ package cluster
 import (
 	"os"
 	"path"
-	"strings"
 	"time"
 
-	"github.com/hashicorp/raft"
-	"github.com/hashicorp/raft-boltdb"
 	"github.com/laohanlinux/go-logger/logger"
 	"github.com/laohanlinux/riot/config"
 	"github.com/laohanlinux/riot/fsm"
 	rstore "github.com/laohanlinux/riot/store"
+
+	"github.com/hashicorp/raft"
+	"github.com/hashicorp/raft-boltdb"
 )
 
 type Cluster struct {
@@ -93,47 +93,7 @@ func (c *Cluster) Status() string {
 }
 
 func (c *Cluster) LeaderChange(cfg *config.Configure) {
-	go func() {
-		for {
-			time.Sleep(time.Second * 3)
-			leaderName := c.R.Leader()
-			logger.Debug(leaderName)
-			if leaderName == "" {
-				continue
-			}
-			oldLeaderName := cfg.LeaderRpcC.Addr + ":" + cfg.LeaderRpcC.Port
-			logger.Debug(oldLeaderName)
-			if oldLeaderName == leaderName {
-				continue
-			}
-			addr := strings.Split(leaderName, ":")
-			// url := fmt.Sprintf("http://%s:%s/admin/lrpc", addr[0], cfg.SC.Port)
-			// logger.Info("lrpc request:", url)
-			// resp, err := http.Get(url)
-			// if err != nil {
-			// 	logger.Error(err)
-			// 	continue
-			// }
-			// rmsg := msgpack.ResponseMsg{}
-			// b, err := ioutil.ReadAll(resp.Body)
-			// if err != nil {
-			// 	logger.Error(err)
-			// 	resp.Body.Close()
-			// 	continue
-			// }
-			// err = json.Unmarshal(b, &rmsg)
-			// if err != nil {
-			// 	logger.Error(err)
-			// 	resp.Body.Close()
-			// 	continue
-			// }
-			// resp.Body.Close()
-			// logger.Info(rmsg)
-			// addr = strings.Split(fmt.Sprintf("%s", rmsg.Results), ":")
-			cfg.LeaderRpcC.Addr, cfg.LeaderRpcC.Port = addr[0], cfg.RpcC.Port
-			logger.Info("leader change to ", addr, leaderName)
-		}
-	}()
+
 }
 
 func (c *Cluster) Leader() string {
