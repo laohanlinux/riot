@@ -41,7 +41,6 @@ func (rc *RiotRPCClient) RPCRequest(rpcAddr string, r *pb.OpRequest) (*pb.OpRepl
 		rc.conn[rpcAddr] = conn
 	}
 	rc.l.Unlock()
-	logger.Info("leader addr:", rpcAddr)
 	client := pb.NewRiotGossipClient(conn)
 	return client.OpRPC(context.Background(), r)
 }

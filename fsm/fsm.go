@@ -1,17 +1,17 @@
 package fsm
 
 import (
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/laohanlinux/riot/rpc/pb"
 	"github.com/laohanlinux/riot/share"
 	"github.com/laohanlinux/riot/store"
-
-	"encoding/binary"
 
 	"github.com/hashicorp/raft"
 	"github.com/laohanlinux/go-logger/logger"
@@ -43,7 +43,7 @@ type StorageFSM struct {
 func (s *StorageFSM) Apply(log *raft.Log) interface{} {
 	s.l.Lock()
 	defer s.l.Unlock()
-	logger.Info("Excute StorageFSM.Apply ...")
+	//logger.Debug("Excute StorageFSM.Apply ...")
 	var req pb.OpRequest
 	if err := json.Unmarshal(log.Data, &req); err != nil {
 		logger.Fatal(err)
@@ -56,16 +56,16 @@ func (s *StorageFSM) Apply(log *raft.Log) interface{} {
 	case "DEL":
 		err = s.rs.Del([]byte(req.Key))
 	case "SHARE":
-		logger.Debug("更新共享内存.")
-		var shareCache share.ShareCache
-		err = json.Unmarshal(req.Value, shareCache)
-		if err != nil {
-			return err
-		}
-		share.ShCache.LRPC.Addr = shareCache.LRPC.Addr
-		share.ShCache.LRPC.Port = shareCache.LRPC.Port
+		addr := string(req.Value)
+		idx := strings.Index(addr, ":")
+		share.ShCache.LRPC.Addr = addr[:idx]
+		share.ShCache.LRPC.Port = addr[idx+1:]
+		//logger.Debug("update share cache meory:", string(req.Value), share.ShCache.LRPC.Addr, share.ShCache.LRPC.Port)
 	default:
 		err = ErrInvalidCmd
+	}
+	if err != nil {
+		logger.Error(err.Error())
 	}
 	return err
 }

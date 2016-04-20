@@ -17,9 +17,17 @@ type RpcConfig struct {
 	Port string `toml:"port"`
 }
 
+func (rpc RpcConfig) AddrString() string {
+	return fmt.Sprintf("%s:%s", rpc.Addr, rpc.Port)
+}
+
 type LeaderRpcConfig struct {
 	Addr string
 	Port string
+}
+
+func (lrc LeaderRpcConfig) AddrString() string {
+	return fmt.Sprintf("%s:%s", lrc.Addr, lrc.Port)
 }
 
 type RaftConfig struct {
@@ -32,6 +40,10 @@ type RaftConfig struct {
 	RaftLogPath      string   `toml:"raft_log_path"`
 	ApplyLogPath     string   `toml:"apply_log_path"`
 	EnableSingleNode bool     `toml:"enable_single_node"`
+}
+
+func (rc RaftConfig) AddrString() string {
+	return fmt.Sprintf("%s:%s", rc.Addr, rc.Port)
 }
 
 type LogConfig struct {

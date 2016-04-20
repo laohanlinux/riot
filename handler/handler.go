@@ -8,6 +8,8 @@ import (
 
 	"github.com/laohanlinux/riot/command"
 	"github.com/laohanlinux/riot/fsm"
+
+	"github.com/laohanlinux/go-logger/logger"
 )
 
 // ...
@@ -68,7 +70,7 @@ func (rh *RiotHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "POST":
 		errType, err = setValue(w, r)
 		if err != nil {
-			fmt.Printf("%s\n", err)
+			logger.Error(errType, err)
 		}
 	default:
 		errType = InvalidRequest

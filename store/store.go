@@ -28,8 +28,8 @@ func NewLeveldbStorage(dir string) *leveldbStorage {
 		panic(err)
 	}
 	return &leveldbStorage{
-		c: make(chan Iterm),
-		l: &sync.Mutex{},
+		c:  make(chan Iterm),
+		l:  &sync.Mutex{},
 		DB: db,
 	}
 }

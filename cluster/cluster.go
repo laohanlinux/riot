@@ -85,24 +85,14 @@ func NewCluster(cfg *config.Configure, conf *raft.Config) *Cluster {
 	return rCluster
 }
 
-func (c *Cluster) Join() {
+// func (c *Cluster) Join()          {}
+func (c *Cluster) Status() string { return c.R.State().String() }
 
-}
-func (c *Cluster) Status() string {
-	return c.R.State().String()
-}
+// func (c *Cluster) LeaderChange(cfg *config.Configure) {}
 
-func (c *Cluster) LeaderChange(cfg *config.Configure) {
+func (c *Cluster) Leader() string { return c.R.Leader() }
 
-}
-
-func (c *Cluster) Leader() string {
-	return c.R.Leader()
-}
-
-func (c *Cluster) Get(key string) ([]byte, error) {
-	return c.FSM.Get(key)
-}
+func (c *Cluster) Get(key string) ([]byte, error) { return c.FSM.Get(key) }
 
 func initRaftLog(cfg *config.Configure, conf *raft.Config) *raftboltdb.BoltStore {
 	// init raft app log

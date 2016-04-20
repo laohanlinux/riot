@@ -131,45 +131,27 @@ func join(cfg *config.Configure) {
 func updateShareMemory(cfg *config.Configure) {
 
 	go func() {
-		var sc share.ShareCache
-		sc.LRPC = &share.LeaderRpcAddr{
-			Addr: "",
-			Port: "",
-		}
-
 		for {
 			time.Sleep(time.Second * 3)
-			oddr, oport := share.ShCache.LRPC.Addr, share.ShCache.LRPC.Port
-			oddr1, oprt1 := cfg.LeaderRpcC.Addr, cfg.LeaderRpcC.Port
-			if (oddr+oport) == (oddr1+oprt1) && oddr != "" {
-				continue
-			}
-			// old not equall new or old is empty
-			logger.Info(cfg.LeaderRpcC, string(share.ShCache.ToBytes()))
-			// update data by leader node
-			cfg.LeaderRpcC.Addr = oddr
-			cfg.LeaderRpcC.Port = oport
-			leaderAddr := cluster.SingleCluster().R.Leader()
-			cfg.LeaderRpcC.Addr = oddr
-			cfg.LeaderRpcC.Port = oport
 
-			if leaderAddr != (cfg.RaftC.Addr + ":" + cfg.RaftC.Port) {
-				logger.Info("不是leader, leader:", leaderAddr, cfg.RaftC.Addr+":"+cfg.RaftC.Port)
-				continue
+			// get leaderName
+			r := cluster.SingleCluster().R
+			if cfg.RaftC.AddrString() == r.Leader() {
+				// update leader addr info
+				opRequest := pb.OpRequest{
+					Op:    command.CmdShare,
+					Key:   "",
+					Value: []byte(cfg.RpcC.AddrString()),
+				}
+				b, _ := json.Marshal(opRequest)
+				err := r.Apply(b, 3)
+				if err != nil && err.Error() != nil {
+					logger.Error(err.Error())
+					continue
+				}
+				time.Sleep(time.Second * 2)
 			}
-			// encode ShareCache
-			sc.LRPC.Addr = cfg.RpcC.Addr
-			sc.LRPC.Port = cfg.RpcC.Port
-			opRequest := pb.OpRequest{
-				Op:    command.CmdShare,
-				Key:   "",
-				Value: sc.ToBytes(),
-			}
-			b, _ := json.Marshal(opRequest)
-			err := cluster.SingleCluster().R.Apply(b, 3)
-			if err != nil {
-				logger.Error(err)
-			}
+			cfg.LeaderRpcC.Addr, cfg.LeaderRpcC.Port = share.ShCache.LRPC.Addr, share.ShCache.LRPC.Port
 		}
 	}()
 }
