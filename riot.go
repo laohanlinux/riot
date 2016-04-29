@@ -26,10 +26,10 @@ import (
 	"github.com/laohanlinux/mux"
 )
 
-var joinAddr string
 
 func main() {
 	var cfgPath string
+	var joinAddr string
 	flag.StringVar(&cfgPath, "c", "", "configure path")
 	flag.StringVar(&joinAddr, "join", "", "host:port of leader to join")
 	flag.Parse()
@@ -84,13 +84,11 @@ func main() {
 		rc := raft.DefaultConfig()
 
 		if joinAddr != "" {
-			go join(cfg)
+			go join(cfg, joinAddr)
 		}
 		// rc.EnableSingleNode = true
-		c := cluster.NewCluster(cfg, rc)
+		cluster.NewCluster(cfg, rc)
 		updateShareMemory(cfg)
-		// waitting for leader
-		c.LeaderChange(cfg)
 		m := mux.NewRouter()
 		m.Handle("/riot", &handler.RiotHandler{})
 		m.HandleFunc("/admin/{cmd}", handler.AdminHandlerFunc)
@@ -103,7 +101,7 @@ func main() {
 	gGroup.Wait()
 }
 
-func join(cfg *config.Configure) {
+func join(cfg *config.Configure, joinAddr string) {
 	var results msgpack.ResponseMsg
 	for {
 		time.Sleep(time.Second)
