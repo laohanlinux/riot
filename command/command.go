@@ -33,7 +33,7 @@ func (cm Command) DoGet() ([]byte, error) {
 
 func (cm Command) DoSet() error {
 	cfg := config.GetConfigure()
-	rpcAddr := fmt.Sprintf("%s:%s", cfg.LeaderRpcC.Addr, cfg.RpcC.Port)
+	rpcAddr := fmt.Sprintf("%s:%s", cfg.LeaderRpcC.Addr, cfg.LeaderRpcC.Port)
 	opRequest := pb.OpRequest{
 		Op:    cm.Op,
 		Key:   cm.Key,
@@ -48,7 +48,7 @@ func (cm Command) DoSet() error {
 
 func (cm Command) DoDel() error {
 	cfg := config.GetConfigure()
-	rpcAddr := fmt.Sprintf("%s:%s", cfg.LeaderRpcC.Addr, cfg.RpcC.Port)
+	rpcAddr := fmt.Sprintf("%s:%s", cfg.LeaderRpcC.Addr, cfg.LeaderRpcC.Port)
 	opRequest := pb.OpRequest{
 		Op:    cm.Op,
 		Key:   cm.Key,

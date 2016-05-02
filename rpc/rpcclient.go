@@ -32,7 +32,7 @@ func (rc *RiotRPCClient) RPCRequest(rpcAddr string, r *pb.OpRequest) (*pb.OpRepl
 	var err error
 	conn, ok := rc.conn[rpcAddr]
 	if !ok {
-		logger.Warn("New RPC Connect...")
+		logger.Warn("New RPC Connect, rpc server addr:", rpcAddr)
 		conn, err = grpc.Dial(rpcAddr, grpc.WithInsecure())
 		if err != nil {
 			rc.l.Unlock()

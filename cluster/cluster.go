@@ -12,6 +12,7 @@ import (
 
 	"github.com/hashicorp/raft"
 	"github.com/hashicorp/raft-boltdb"
+	"fmt"
 )
 
 type Cluster struct {
@@ -57,7 +58,8 @@ func NewCluster(cfg *config.Configure, conf *raft.Config) *Cluster {
 	rCluster.Snap = snap
 
 	// create transport
-	tran, err := raft.NewTCPTransport(cfg.RaftC.Addr+":"+cfg.RaftC.Port, nil, 3, 2*time.Second, nil)
+	tranAddr := fmt.Sprintf("%s:%s", cfg.RaftC.Addr, cfg.RaftC.Port)
+	tran, err := raft.NewTCPTransport(tranAddr, nil, 3, 2*time.Second, nil)
 	if err != nil {
 		logger.Fatal(err)
 	}
@@ -85,10 +87,7 @@ func NewCluster(cfg *config.Configure, conf *raft.Config) *Cluster {
 	return rCluster
 }
 
-// func (c *Cluster) Join()          {}
 func (c *Cluster) Status() string { return c.R.State().String() }
-
-// func (c *Cluster) LeaderChange(cfg *config.Configure) {}
 
 func (c *Cluster) Leader() string { return c.R.Leader() }
 
