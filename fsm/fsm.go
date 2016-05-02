@@ -134,7 +134,6 @@ func (s *StorageFSM) Restore(inp io.ReadCloser) error {
 
 // StorageSnapshot .
 type StorageSnapshot struct {
-	diskCache map[string][]byte
 	diskStore RiotStorage
 }
 
