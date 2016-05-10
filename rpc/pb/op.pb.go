@@ -63,6 +63,10 @@ func init() {
 var _ context.Context
 var _ grpc.ClientConn
 
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the grpc package it is being compiled against.
+const _ = grpc.SupportPackageIsVersion2
+
 // Client API for RiotGossip service
 
 type RiotGossipClient interface {
@@ -96,16 +100,22 @@ func RegisterRiotGossipServer(s *grpc.Server, srv RiotGossipServer) {
 	s.RegisterService(&_RiotGossip_serviceDesc, srv)
 }
 
-func _RiotGossip_OpRPC_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error) (interface{}, error) {
+func _RiotGossip_OpRPC_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(OpRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
-	out, err := srv.(RiotGossipServer).OpRPC(ctx, in)
-	if err != nil {
-		return nil, err
+	if interceptor == nil {
+		return srv.(RiotGossipServer).OpRPC(ctx, in)
 	}
-	return out, nil
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.RiotGossip/OpRPC",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RiotGossipServer).OpRPC(ctx, req.(*OpRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 var _RiotGossip_serviceDesc = grpc.ServiceDesc{
