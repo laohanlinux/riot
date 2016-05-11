@@ -1,6 +1,7 @@
 package cluster
 
 import (
+	"fmt"
 	"os"
 	"path"
 	"time"
@@ -8,11 +9,9 @@ import (
 	"github.com/laohanlinux/go-logger/logger"
 	"github.com/laohanlinux/riot/config"
 	"github.com/laohanlinux/riot/fsm"
-	rstore "github.com/laohanlinux/riot/store"
 
 	"github.com/hashicorp/raft"
 	"github.com/hashicorp/raft-boltdb"
-	"fmt"
 )
 
 type Cluster struct {
@@ -47,7 +46,7 @@ func NewCluster(cfg *config.Configure, conf *raft.Config) *Cluster {
 	if err := os.RemoveAll(cfg.RaftC.StoreBackendPath); err != nil {
 		logger.Fatal(err)
 	}
-	edbs := rstore.NewLeveldbStorage(cfg.RaftC.StoreBackendPath)
+	edbs := fsm.NewRiotStoreFactory(fsm.LevelDBStoreBackend, cfg.RaftC.StoreBackendPath)
 	rCluster.FSM = fsm.NewStorageFSM(edbs)
 
 	//create snap dir

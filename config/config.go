@@ -37,6 +37,7 @@ type RaftConfig struct {
 	PeerStorage      string   `toml:"peer_storage"`
 	SnapshotStorage  string   `toml:"snapshot_storage"`
 	StoreBackendPath string   `toml:"storage_backend_path"`
+	StoreBackend     string   `toml:"store_backend"`
 	RaftLogPath      string   `toml:"raft_log_path"`
 	ApplyLogPath     string   `toml:"apply_log_path"`
 	EnableSingleNode bool     `toml:"enable_single_node"`
