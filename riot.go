@@ -26,7 +26,6 @@ import (
 	"github.com/laohanlinux/mux"
 )
 
-
 func main() {
 	var cfgPath string
 	var joinAddr string
@@ -86,12 +85,11 @@ func main() {
 		if joinAddr != "" {
 			go join(cfg, joinAddr)
 		}
-		// rc.EnableSingleNode = true
 		cluster.NewCluster(cfg, rc)
 		updateShareMemory(cfg)
 		m := mux.NewRouter()
-		m.Handle("/riot", &handler.RiotHandler{})
-		m.HandleFunc("/admin/{cmd}", handler.AdminHandlerFunc)
+		m.Handle("/riot/key/{key}", &handler.RiotHandler{})
+		m.HandleFunc("/riot/admin/{cmd}", handler.AdminHandlerFunc)
 		if err := http.ListenAndServe(cfg.SC.Addr+":"+cfg.SC.Port, m); err != nil {
 			fmt.Printf("%s\n", err)
 		}
@@ -106,14 +104,19 @@ func join(cfg *config.Configure, joinAddr string) {
 	for {
 		time.Sleep(time.Second)
 		b, _ := json.Marshal(map[string]string{"ip": cfg.RaftC.Addr, "port": cfg.RaftC.Port})
-		resp, err := http.Post("http://"+joinAddr+"/admin/join", "application-type/json", bytes.NewReader(b))
+		httpURL := fmt.Sprintf("http://%s/riot/admin/join", joinAddr)
+		resp, err := http.Post(httpURL, "application-type/json", bytes.NewReader(b))
 		if err != nil {
 			logger.Error(err)
 			continue
 		}
+		if resp.StatusCode != 200 {
+			logger.Error(httpURL, " request status code:", resp.Status)
+			continue
+		}
 		rpl, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			logger.Error(err)
+			logger.Warn(err)
 			continue
 		}
 		resp.Body.Close()
@@ -144,7 +147,7 @@ func updateShareMemory(cfg *config.Configure) {
 				b, _ := json.Marshal(opRequest)
 				err := r.Apply(b, 3)
 				if err != nil && err.Error() != nil {
-					logger.Warn(r.Leader(), err.Error())
+					logger.Error(r.Leader(), err.Error())
 					continue
 				}
 				time.Sleep(time.Second * 5)

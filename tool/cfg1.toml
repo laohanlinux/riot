@@ -9,6 +9,7 @@ port = "12001"
 peers = ["127.0.0.1:12001"]
 peer_storage = "raft1/raft_peer_storage"
 snapshot_storage = "raft1/raft_snapshot_storage"
+store_backend = "leveldb"
 storage_backend_path = "raft1/storage_backend_path"
 raft_log_path = "raft1/raft_log_path"
 apply_log_path = "raft1/apply_log_path"

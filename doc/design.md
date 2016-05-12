@@ -1,11 +1,8 @@
 # Riot
 
 
+# http interface 
+
 ```
-    |------------|
-    | httpHandler|  
-    --------------
-            |
-            |
-            |
+http://localhost:8080/riot/key/xxxxxxxxxxx
 ```

@@ -10,6 +10,7 @@ import (
 	"github.com/laohanlinux/riot/fsm"
 
 	"github.com/laohanlinux/go-logger/logger"
+	"github.com/laohanlinux/mux"
 )
 
 // ...
@@ -60,12 +61,12 @@ func (rh *RiotHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "GET":
 		errType, value, err = getValue(w, r)
 		if err != nil {
-			fmt.Printf("%s\n", err)
+			logger.Error(err)
 		}
 	case "DELETE":
 		errType, err = delValue(w, r)
 		if err != nil {
-			fmt.Printf("%s\n", err)
+			logger.Error(err)
 		}
 	case "POST":
 		errType, err = setValue(w, r)
@@ -85,9 +86,12 @@ func (rh *RiotHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func getValue(w http.ResponseWriter, r *http.Request) (string, []byte, error) {
+	vars := mux.Vars(r)
+	key := vars["key"]
+
 	cmd := command.Command{
 		Op:  command.CmdGet,
-		Key: r.URL.RequestURI(),
+		Key: key,
 	}
 	if len(cmd.Key) == 0 {
 		return InvalidKey, nil, fmt.Errorf("The Key is Empty")
@@ -104,13 +108,15 @@ func getValue(w http.ResponseWriter, r *http.Request) (string, []byte, error) {
 }
 
 func setValue(w http.ResponseWriter, r *http.Request) (string, error) {
+	vars := mux.Vars(r)
+	key := vars["key"]
 	value, err := ioutil.ReadAll(r.Body)
 	if err != nil || value == nil || len(value) == 0 {
 		return InvalidRequest, err
 	}
 	cmd := command.Command{
 		Op:    command.CmdSet,
-		Key:   r.URL.RequestURI(),
+		Key:   key,
 		Value: value,
 	}
 	err = cmd.DoSet()
@@ -121,9 +127,11 @@ func setValue(w http.ResponseWriter, r *http.Request) (string, error) {
 }
 
 func delValue(w http.ResponseWriter, r *http.Request) (string, error) {
+	vars := mux.Vars(r)
+	key := vars["key"]
 	cmd := command.Command{
 		Op:  command.CmdDel,
-		Key: r.URL.RequestURI(),
+		Key: key,
 	}
 
 	err := cmd.DoDel()

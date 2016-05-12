@@ -46,7 +46,7 @@ func NewCluster(cfg *config.Configure, conf *raft.Config) *Cluster {
 	if err := os.RemoveAll(cfg.RaftC.StoreBackendPath); err != nil {
 		logger.Fatal(err)
 	}
-	edbs := fsm.NewRiotStoreFactory(fsm.LevelDBStoreBackend, cfg.RaftC.StoreBackendPath)
+	edbs := fsm.NewRiotStoreFactory(cfg.RaftC.StoreBackend, cfg.RaftC.StoreBackendPath)
 	rCluster.FSM = fsm.NewStorageFSM(edbs)
 
 	//create snap dir
