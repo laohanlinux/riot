@@ -19,7 +19,7 @@ const (
 
 const (
 	QsConsistent = iota
-	QsRandon
+	QsRandom
 )
 
 type Command struct {
@@ -47,7 +47,7 @@ func (cm Command) DoGet(qs int) ([]byte, error) {
 			return nil, fmt.Errorf("%s", reply.Msg)
 		}
 		return reply.Value, nil
-	case QsRandon:
+	case QsRandom:
 		c := cluster.SingleCluster()
 		return c.Get(cm.Key)
 	default:

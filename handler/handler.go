@@ -100,7 +100,7 @@ func getValue(w http.ResponseWriter, r *http.Request) (string, []byte, error) {
 		return InvalidKey, nil, fmt.Errorf("The Key is Empty")
 	}
 
-	qs := command.QsRandon
+	qs := command.QsRandom
 	var err error
 	//Query strategires
 	qsValue := r.URL.Query().Get("qs")
