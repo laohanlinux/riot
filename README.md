@@ -14,6 +14,11 @@ go get -u google.golang.org/grpc
 go get -a github.com/golang/protobuf/protoc-gen-go
 ```
 
+*Notice*:
+
+> if can not compile it, please do that (may sure protoc is installed): 
+> cd rpc/pb && protoc --go_out=plugins=grpc:. op.proto
+
 - build riot
 
 ```
@@ -24,5 +29,5 @@ go build riot
 
 ```
 cd tool
-bash cluster1.sh
+bash cluster1.sh 1
 ```

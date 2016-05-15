@@ -17,6 +17,11 @@ const (
 	CmdShare = "SHARE"
 )
 
+const (
+	QsConsistent = iota
+	QsRandon
+)
+
 type Command struct {
 	Op    string
 	Key   string
@@ -24,11 +29,30 @@ type Command struct {
 }
 
 // DoGet returns value by specified key
-// TODO
-// search a value from Leader Node or Follower Node mannully
-func (cm Command) DoGet() ([]byte, error) {
-	c := cluster.SingleCluster()
-	return c.Get(cm.Key)
+func (cm Command) DoGet(qs int) ([]byte, error) {
+	switch qs {
+	case QsConsistent:
+		cfg := config.GetConfigure()
+		rpcAddr := fmt.Sprintf("%s:%s", cfg.LeaderRpcC.Addr, cfg.LeaderRpcC.Port)
+		opRequest := pb.OpRequest{
+			Op:    cm.Op,
+			Key:   cm.Key,
+			Value: cm.Value,
+		}
+		reply, err := rpc.NewRiotRPCClient().RPCRequest(rpcAddr, &opRequest)
+		if err != nil {
+			return nil, err
+		}
+		if reply.Status != 1 {
+			return nil, fmt.Errorf("%s", reply.Msg)
+		}
+		return reply.Value, nil
+	case QsRandon:
+		c := cluster.SingleCluster()
+		return c.Get(cm.Key)
+	default:
+		return nil, fmt.Errorf("the qury strategies is invalid.")
+	}
 }
 
 func (cm Command) DoSet() error {

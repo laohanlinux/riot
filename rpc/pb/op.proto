@@ -15,5 +15,6 @@ message OpRequest {
 message OpReply {
     int32 status = 1;
     string msg = 2;
-    int32 errCode = 3;
+    bytes value = 3;
+    int32 errCode = 4;
 }

@@ -8,7 +8,7 @@ done
 
 
 for((i=1;i<=1024;i++));do
-    url="http://localhost:8081/riot/key/$i"
+    url="http://localhost:8081/riot/key/$i?qs=$1"
     echo $url
     curl -v "$url"
 done

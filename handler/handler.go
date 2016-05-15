@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 
 	"github.com/laohanlinux/riot/command"
 	"github.com/laohanlinux/riot/fsm"
@@ -20,7 +21,8 @@ const (
 	NetErr         = "net work timeout"
 	InternalErr    = "riot server error"
 	InvalidKey     = "invalid key"
-	InvalidRequest = "Invalid Request"
+	InvalidRequest = "invalid Request"
+	QsInvalid      = "invalid query strategies"
 	NotFound       = "not found"
 )
 
@@ -45,6 +47,7 @@ func init() {
 	msgErrCodeMap[NetErr] = errCodeObj{409, 40002, NetErr}
 	msgErrCodeMap[InvalidKey] = errCodeObj{403, 40003, InvalidKey}
 	msgErrCodeMap[InvalidRequest] = errCodeObj{403, 40005, InvalidRequest}
+	msgErrCodeMap[QsInvalid] = errCodeObj{403, 40006, QsInvalid}
 	msgErrCodeMap[InternalErr] = errCodeObj{500, 50000, InternalErr}
 }
 
@@ -97,7 +100,18 @@ func getValue(w http.ResponseWriter, r *http.Request) (string, []byte, error) {
 		return InvalidKey, nil, fmt.Errorf("The Key is Empty")
 	}
 
-	value, err := cmd.DoGet()
+	qs := command.QsRandon
+	var err error
+	//Query strategires
+	qsValue := r.URL.Query().Get("qs")
+	if qsValue == "" {
+		qs, err = strconv.Atoi(qsValue)
+		if err != nil {
+			return QsInvalid, nil, err
+		}
+	}
+	var value []byte
+	value, err = cmd.DoGet(qs)
 	if err != nil && err != fsm.ErrNotFound {
 		return OpErr, value, err
 	}
