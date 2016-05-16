@@ -8,8 +8,10 @@ import (
 
 const (
 	LevelDBStoreBackend = "leveldb"
+	boltDBStoreBackend = "boltdb"
 )
 
+const defaultBucket  = "0"
 type RiotStorage interface {
 	Get([]byte) ([]byte, error)
 	Set([]byte, []byte) error
@@ -30,6 +32,8 @@ func NewRiotStoreFactory(storeBackend, storePath string) RiotStorage {
 	switch storeBackend {
 	case LevelDBStoreBackend:
 		return store.NewLeveldbStorage(storePath)
+	case boltDBStoreBackend:
+		return store.NewBoltdbStore(storePath, []byte(defaultBucket))
 	default:
 		logger.Fatal("unkown the store backend:", storeBackend)
 	}

@@ -6,6 +6,7 @@ import (
 
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/boltdb/bolt"
+	"fmt"
 )
 
 var ErrFinished = errors.New("all data is sent successfully")
@@ -52,11 +53,12 @@ func (edbs *leveldbStorage) Close() error {
 }
 
 func (edbs *leveldbStorage) Rec() <-chan Iterm {
-	edbs.l.Lock()
+	go edbs.streamWorker()
 	return edbs.c
 }
 
 func (edbs *leveldbStorage) streamWorker() {
+	edbs.l.Lock()
 	defer edbs.l.Unlock()
 	iter := edbs.NewIterator(nil, nil)
 	var iterm Iterm
@@ -74,5 +76,92 @@ func (edbs *leveldbStorage) streamWorker() {
 type boltdbStore  struct{
 	*bolt.DB
 	c chan Iterm
-	l *sync.Locker
+	l *sync.Mutex
+	defaultBucket []byte
 }
+
+func NewBoltdbStore(dir string, defaultBucket []byte) *boltdbStore{
+	db, err := bolt.Open(dir, 0600, nil)
+	if err != nil {
+		panic(err)
+	}
+	// create a new bucket
+	tx, err := db.Begin(true)
+	defer tx.Rollback()
+
+	tx.CreateBucketIfNotExists(defaultBucket)
+
+	return &boltdbStore{
+		DB: db,
+		c : make(chan Iterm),
+		l : &sync.Mutex{},
+		defaultBucket: defaultBucket,
+	}
+}
+// without transaction
+func (bdbs * boltdbStore) Get(key []byte)([]byte, error) {
+	var value []byte
+	bdbs.View(func(tx *bolt.Tx) error{
+		b := tx.Bucket(bdbs.defaultBucket)
+		v := b.Get(key)
+		if v != nil {
+			copy(value, v)
+		}
+		return nil
+	})
+	return value, nil
+}
+
+func (bdbs *boltdbStore) Set(key, value []byte) error {
+	tx, err := bdbs.Begin(true)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	fmt.Println("key:", string(key), "value:", value, "bucket:", string(bdbs.defaultBucket))
+	bucket := tx.Bucket(bdbs.defaultBucket)
+	if bucket == nil {
+		return fmt.Errorf("the bucket is nil.")
+	}
+	return bucket.Put(key, value)
+}
+
+func (bdbs * boltdbStore) Del(key []byte) error {
+	tx, err := bdbs.Begin(true)
+	if err != nil {
+		return nil
+	}
+	defer tx.Rollback()
+
+	bucket := tx.Bucket(bdbs.defaultBucket)
+	return bucket.Delete(key)
+}
+
+func (bdbs *boltdbStore) Close() error {
+	return bdbs.DB.Close()
+}
+
+func (bdbs *boltdbStore) Rec() <-chan Iterm {
+	bdbs.l.Lock()
+	return bdbs.c
+}
+
+func (bdbs *boltdbStore) streamWorker() {
+	bdbs.l.Lock()
+	defer  bdbs.l.Unlock()
+	var iterm Iterm
+	bdbs.View(func(tx *bolt.Tx) error{
+		bucket := tx.Bucket(bdbs.defaultBucket)
+		c := bucket.Cursor()
+		for k, v := c.First(); k != nil; k, v = c.Next(){
+			iterm.Key, iterm.Value = k, v
+			bdbs.c <- iterm
+		}
+		return nil
+	})
+
+	iterm.Err = ErrFinished
+	iterm.Key, iterm.Value = nil, nil
+	bdbs.c <- iterm
+}
+
