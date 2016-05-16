@@ -67,3 +67,9 @@ func (edbs *leveldbStorage) streamWorker() {
 	iterm.Err = ErrFinished
 	edbs.c <- iterm
 }
+
+
+// boltdb store
+type boltdbStore  struct{
+
+}
