@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/boltdb/bolt"
 )
 
 var ErrFinished = errors.New("all data is sent successfully")
@@ -71,5 +72,7 @@ func (edbs *leveldbStorage) streamWorker() {
 
 // boltdb store
 type boltdbStore  struct{
-
+	*bolt.DB
+	c chan Iterm
+	l *sync.Locker
 }
