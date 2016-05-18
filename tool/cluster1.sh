@@ -1,4 +1,6 @@
-pkill riot 
+pid=`ps -ef | grep riot | awk '{print $2}'`
+kill `echo $pid`
+
 cd ..
 go build riot.go 
 

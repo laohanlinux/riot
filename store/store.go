@@ -67,6 +67,7 @@ func (edbs *leveldbStorage) streamWorker() {
 		iterm.Key, iterm.Value = iter.Key(), iter.Value()
 		edbs.c <- iterm
 	}
+	iterm.Key, iterm.Value = nil, nil
 	iterm.Err = ErrFinished
 	edbs.c <- iterm
 }
@@ -87,9 +88,18 @@ func NewBoltdbStore(dir string, defaultBucket []byte) *boltdbStore{
 	}
 	// create a new bucket
 	tx, err := db.Begin(true)
+	if err != nil {
+		panic(err)
+	}
 	defer tx.Rollback()
 
-	tx.CreateBucketIfNotExists(defaultBucket)
+	_, err = tx.CreateBucketIfNotExists(defaultBucket)
+	if err != nil {
+		panic(err)
+	}
+	if err = tx.Commit(); err != nil {
+		panic(err)
+	}
 
 	return &boltdbStore{
 		DB: db,
@@ -101,7 +111,7 @@ func NewBoltdbStore(dir string, defaultBucket []byte) *boltdbStore{
 // without transaction
 func (bdbs * boltdbStore) Get(key []byte)([]byte, error) {
 	var value []byte
-	bdbs.View(func(tx *bolt.Tx) error{
+	err := bdbs.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket(bdbs.defaultBucket)
 		v := b.Get(key)
 		if v != nil {
@@ -109,6 +119,9 @@ func (bdbs * boltdbStore) Get(key []byte)([]byte, error) {
 		}
 		return nil
 	})
+	if err != nil {
+		return nil, err
+	}
 	return value, nil
 }
 
@@ -123,7 +136,10 @@ func (bdbs *boltdbStore) Set(key, value []byte) error {
 	if bucket == nil {
 		return fmt.Errorf("the bucket is nil.")
 	}
-	return bucket.Put(key, value)
+	if err := bucket.Put(key, value); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 func (bdbs * boltdbStore) Del(key []byte) error {
@@ -134,7 +150,10 @@ func (bdbs * boltdbStore) Del(key []byte) error {
 	defer tx.Rollback()
 
 	bucket := tx.Bucket(bdbs.defaultBucket)
-	return bucket.Delete(key)
+	if err := bucket.Delete(key); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 func (bdbs *boltdbStore) Close() error {
@@ -153,6 +172,7 @@ func (bdbs *boltdbStore) streamWorker() {
 	bdbs.View(func(tx *bolt.Tx) error{
 		bucket := tx.Bucket(bdbs.defaultBucket)
 		c := bucket.Cursor()
+		iterm.Err = nil
 		for k, v := c.First(); k != nil; k, v = c.Next(){
 			iterm.Key, iterm.Value = k, v
 			bdbs.c <- iterm

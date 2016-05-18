@@ -88,7 +88,7 @@ func (s *StorageFSM) Get(key string) ([]byte, error) {
 func (s *StorageFSM) Snapshot() (raft.FSMSnapshot, error) {
 	s.l.Lock()
 	defer s.l.Unlock()
-	//logger.Info("Excute StorageFSM.Snapshot ...")
+	logger.Info("Excute StorageFSM.Snapshot ...")
 	return &StorageSnapshot{
 		diskStore: s.rs,
 	}, nil
@@ -118,14 +118,15 @@ func (s *StorageFSM) Restore(inp io.ReadCloser) error {
 			break
 		}
 		if err != nil {
-			panic(err)
+			panic("snapshot decode error:" + err.Error())
 		}
 		// decoding
 		if err = json.Unmarshal(buf, &iterm); err != nil {
-			panic(err)
+			errMsg := fmt.Sprintf("decode json(%s) error in restore snapshot, error:%s", buf, err.Error())
+			panic(errMsg)
 		}
 		if err = s.rs.Set(iterm.Key, iterm.Value); err != nil {
-			panic(err)
+			panic("restore data into backend store happends error: " + err.Error())
 		}
 	}
 
@@ -139,7 +140,7 @@ type StorageSnapshot struct {
 
 // Persist ...
 func (s *StorageSnapshot) Persist(sink raft.SnapshotSink) error {
-	//logger.Info("Excute StorageSnapshot.Persist ... ")
+	logger.Info("Excute StorageSnapshot.Persist ... ")
 	defer sink.Close()
 	c := s.diskStore.Rec()
 

@@ -24,6 +24,7 @@ const (
 	aNoLeaderErr
 	aUnkownErr    // unkowned error
 	aUnkownCmdErr //
+	aSnapshotErr    // snapshot error
 )
 
 // type ResponseMsg struct {
@@ -66,6 +67,7 @@ func AdminHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// return value: errCode, results, appErrMsg
 func doGet(w http.ResponseWriter, r *http.Request) (int, interface{}, error) {
 	vars := mux.Vars(r)
 	cmdAdmin := vars["cmd"]
@@ -93,6 +95,23 @@ func doGet(w http.ResponseWriter, r *http.Request) (int, interface{}, error) {
 	case "lrpc":
 		cfg := config.GetConfigure()
 		return aErrOk, fmt.Sprintf("%s:%s", cfg.RpcC.Addr, cfg.RpcC.Port), nil
+	case "snapshot":
+		r := cluster.SingleCluster()
+		cfg := config.GetConfigure()
+		localName := fmt.Sprintf("%s:%s", cfg.RaftC.Addr, cfg.RaftC.Port)
+		if r.Leader() != localName {
+			return aNoLeaderErr, nil, nil
+		}
+
+		future := r.R.Snapshot()
+		if err := future.Error(); err != nil {
+			return aSnapshotErr, nil, err
+		}
+		snaps, err := r.Snap.List()
+		if err != nil {
+			return aSnapshotErr, nil, err
+		}
+		return aErrOk, fmt.Sprintf("snapshot len:%d", len(snaps)), nil
 	default:
 		return aUnkownCmdErr, nil, fmt.Errorf("%s is unkown cmd", cmdAdmin)
 	}

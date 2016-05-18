@@ -72,7 +72,7 @@ func main() {
 	gGroup.Add(1)
 	go func() {
 		defer gGroup.Done()
-		// Ini log configure
+		// Init log configure
 		logger.SetConsole(true)
 		err = logger.SetRollingDaily(cfg.LogC.LogDir, cfg.LogC.LogName)
 		if err != nil {
@@ -81,7 +81,8 @@ func main() {
 		}
 		// Init raft server
 		rc := raft.DefaultConfig()
-
+		// set snapshot
+		rc.TrailingLogs = 10
 		if joinAddr != "" {
 			go join(cfg, joinAddr)
 		}

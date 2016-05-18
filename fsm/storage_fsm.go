@@ -8,7 +8,7 @@ import (
 
 const (
 	LevelDBStoreBackend = "leveldb"
-	boltDBStoreBackend = "boltdb"
+	BoltDBStoreBackend = "boltdb"
 )
 
 const defaultBucket  = "0"
@@ -32,7 +32,7 @@ func NewRiotStoreFactory(storeBackend, storePath string) RiotStorage {
 	switch storeBackend {
 	case LevelDBStoreBackend:
 		return store.NewLeveldbStorage(storePath)
-	case boltDBStoreBackend:
+	case BoltDBStoreBackend:
 		return store.NewBoltdbStore(storePath, []byte(defaultBucket))
 	default:
 		logger.Fatal("unkown the store backend:", storeBackend)
