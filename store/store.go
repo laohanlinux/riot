@@ -3,10 +3,11 @@ package store
 import (
 	"errors"
 	"sync"
+	"fmt"
 
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/boltdb/bolt"
-	"fmt"
+	lerrors "github.com/syndtr/goleveldb/leveldb/errors"
 )
 
 var ErrFinished = errors.New("all data is sent successfully")
@@ -115,12 +116,17 @@ func (bdbs * boltdbStore) Get(key []byte)([]byte, error) {
 		b := tx.Bucket(bdbs.defaultBucket)
 		v := b.Get(key)
 		if v != nil {
+			// why do that ...
+			value = make([]byte, len(v))
 			copy(value, v)
 		}
 		return nil
 	})
 	if err != nil {
 		return nil, err
+	}
+	if value == nil {
+		return nil, lerrors.ErrNotFound
 	}
 	return value, nil
 }
@@ -131,7 +137,7 @@ func (bdbs *boltdbStore) Set(key, value []byte) error {
 		return err
 	}
 	defer tx.Rollback()
-	fmt.Println("key:", string(key), "value:", value, "bucket:", string(bdbs.defaultBucket))
+	//fmt.Println("key:", string(key), "value:", value, "bucket:", string(bdbs.defaultBucket))
 	bucket := tx.Bucket(bdbs.defaultBucket)
 	if bucket == nil {
 		return fmt.Errorf("the bucket is nil.")
