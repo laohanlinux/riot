@@ -1,6 +1,8 @@
 package share
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 var ShCache *ShareCache
 

@@ -27,8 +27,7 @@ import (
 )
 
 func main() {
-	var cfgPath string
-	var joinAddr string
+	var cfgPath, joinAddr string
 	flag.StringVar(&cfgPath, "c", "", "configure path")
 	flag.StringVar(&joinAddr, "join", "", "host:port of leader to join")
 	flag.Parse()
@@ -55,6 +54,13 @@ func main() {
 	}
 	cfg.Info()
 
+	// Init log confiure
+	logger.SetConsole(true)
+	err = logger.SetRollingDaily(cfg.LogC.LogDir, cfg.LogC.LogName)
+	if err != nil {
+		panic(err)
+	}
+
 	var gGroup sync.WaitGroup
 	var rpcService rpc.RiotRPCService
 	// Init rpc server
@@ -66,19 +72,13 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println("Start rpc server successfully")
+		logger.Info("Start rpc server successfully")
 	}()
 
 	gGroup.Add(1)
 	go func() {
 		defer gGroup.Done()
-		// Init log configure
-		logger.SetConsole(true)
-		err = logger.SetRollingDaily(cfg.LogC.LogDir, cfg.LogC.LogName)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
+
 		// Init raft server
 		rc := raft.DefaultConfig()
 		// set snapshot
@@ -88,13 +88,14 @@ func main() {
 		}
 		cluster.NewCluster(cfg, rc)
 		updateShareMemory(cfg)
+
+		// set app http router
 		m := mux.NewRouter()
 		m.Handle("/riot/key/{key}", &handler.RiotHandler{})
 		m.HandleFunc("/riot/admin/{cmd}", handler.AdminHandlerFunc)
 		if err := http.ListenAndServe(cfg.SC.Addr+":"+cfg.SC.Port, m); err != nil {
-			fmt.Printf("%s\n", err)
+			logger.Error(err)
 		}
-
 	}()
 
 	gGroup.Wait()

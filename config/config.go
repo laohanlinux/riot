@@ -94,8 +94,5 @@ func GetConfigure() *Configure {
 }
 
 func (c *Configure) Info() {
-	fmt.Printf("raft: %v\n", c.RaftC)
-	fmt.Printf("rpc: %v\n", c.RpcC)
-	fmt.Printf("leader rpc: %v\n", c.LeaderRpcC)
-	fmt.Printf("server:%v\n", c.SC)
+	fmt.Printf("raft: %v\n,rpc: %v\nleader rpc: %v\nserver: %v\n", c.RaftC, c.RpcC, c.LeaderRpcC, c.SC)
 }

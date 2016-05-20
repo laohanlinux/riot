@@ -1,12 +1,12 @@
 package store
 
 import (
-	"testing"
 	"os"
+	"testing"
 
 	"github.com/laohanlinux/assert"
-	"github.com/syndtr/goleveldb/leveldb/errors"
 	"github.com/laohanlinux/go-logger/logger"
+	"github.com/syndtr/goleveldb/leveldb/errors"
 )
 
 func TestBoltdbStore(t *testing.T) {

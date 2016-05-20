@@ -8,12 +8,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/laohanlinux/go-logger/logger"
 	"github.com/laohanlinux/riot/cluster"
 	"github.com/laohanlinux/riot/config"
 	"github.com/laohanlinux/riot/handler/msgpack"
 
 	"github.com/hashicorp/raft"
+	"github.com/laohanlinux/go-logger/logger"
 	"github.com/laohanlinux/mux"
 )
 
@@ -24,7 +24,7 @@ const (
 	aNoLeaderErr
 	aUnkownErr    // unkowned error
 	aUnkownCmdErr //
-	aSnapshotErr    // snapshot error
+	aSnapshotErr  // snapshot error
 )
 
 // type ResponseMsg struct {

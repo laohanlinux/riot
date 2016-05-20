@@ -4,4 +4,6 @@ tool/raft1/
 tool/raft2/
 tool/raft3/
 tool/riot
+sftp-config.json
+tool/riot.exe
 .idea/

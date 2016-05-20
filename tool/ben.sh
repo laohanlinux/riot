@@ -6,7 +6,6 @@ for((i=1;i<=1024;i++));do
     curl -XPOST "$url" -d $i
 done 
 
-
 for((i=1;i<=1024;i++));do
     url="http://localhost:$1/riot/key/$i?qs=$2"
     echo $url
