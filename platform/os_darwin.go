@@ -1,0 +1,2 @@
+// +build darwin
+package platform
