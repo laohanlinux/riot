@@ -1,14 +1,15 @@
 package main
 
 import (
-	"flag"
-	"sync"
-	"fmt"
-	"net/http"
-	"github.com/laohanlinux/go-logger/logger"
 	"bytes"
-	"runtime"
+	"flag"
+	"fmt"
 	"io/ioutil"
+	"net/http"
+	"runtime"
+	"sync"
+
+	"github.com/laohanlinux/go-logger/logger"
 )
 
 func main() {
@@ -22,12 +23,12 @@ func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	var gGroup sync.WaitGroup
 	logger.Debug("Ben on Riot. n:", n)
-	for i := 0; i < n; i ++ {
+	for i := 0; i < n; i++ {
 		gGroup.Add(1)
 		logger.Info("start worker:", i)
 		go func(idx int) {
 			defer gGroup.Done()
-			for j := 0 * idx; j < 1024; j ++ {
+			for j := 0 * idx; j < 1024; j++ {
 				httpURL := fmt.Sprintf("http://%s/riot/key/%d", addr, j)
 				logger.Debug("request in:", idx, " ", httpURL)
 				ioReader := bytes.NewReader([]byte(fmt.Sprintf("%d", j)))
@@ -46,12 +47,12 @@ func main() {
 
 	gGroup.Wait()
 
-	for i := 0; i < n; i ++ {
+	for i := 0; i < n; i++ {
 		gGroup.Add(1)
 		logger.Info("start worker:", i)
 		go func(idx int) {
 			defer gGroup.Done()
-			for j := 0 * idx; j < 1024; j ++ {
+			for j := 0 * idx; j < 1024; j++ {
 				httpURL := fmt.Sprintf("http://%s/riot/key/%d?qs=%s", addr, j, qs)
 				logger.Debug("request in:", idx, " ", httpURL)
 				resp, err := http.Get(httpURL)

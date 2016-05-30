@@ -1,3 +1,2 @@
 // +build linux
-
 package platform

@@ -10,6 +10,7 @@ message OpRequest {
     string op = 1;
     string key= 2;
     bytes value = 3;
+    string bucket = 4;
 }
 
 message OpReply {

@@ -11,10 +11,14 @@ import (
 
 // ....
 const (
-	CmdGet   = "GET"
-	CmdSet   = "SET"
-	CmdDel   = "DEL"
-	CmdShare = "SHARE"
+	CmdGet          = "GET"
+	CmdSet          = "SET"
+	CmdDel          = "DEL"
+	CmdShare        = "SHARE"
+	CmdGetBucket    = "GET BUCKET"
+	CmdSetBucket    = "SET BUCKET"
+	CmdCreateBucket = "CREATE BUCKET"
+	CmdDelBucket    = "DEL BUCKET"
 )
 
 const (
@@ -23,21 +27,24 @@ const (
 )
 
 type Command struct {
-	Op    string
-	Key   string
-	Value []byte
+	Op     string
+	Bucket string
+	Key    string
+	Value  []byte
 }
 
 // DoGet returns value by specified key
 func (cm Command) DoGet(qs int) ([]byte, error) {
 	switch qs {
 	case QsConsistent:
+		// make it simple better, proxy to leader http port
 		cfg := config.GetConfigure()
 		rpcAddr := fmt.Sprintf("%s:%s", cfg.LeaderRpcC.Addr, cfg.LeaderRpcC.Port)
 		opRequest := pb.OpRequest{
-			Op:    cm.Op,
-			Key:   cm.Key,
-			Value: cm.Value,
+			Op:     cm.Op,
+			Bucket: cm.Bucket,
+			Key:    cm.Key,
+			Value:  cm.Value,
 		}
 		reply, err := rpc.NewRiotRPCClient().RPCRequest(rpcAddr, &opRequest)
 		if err != nil {
@@ -59,9 +66,10 @@ func (cm Command) DoSet() error {
 	cfg := config.GetConfigure()
 	rpcAddr := fmt.Sprintf("%s:%s", cfg.LeaderRpcC.Addr, cfg.LeaderRpcC.Port)
 	opRequest := pb.OpRequest{
-		Op:    cm.Op,
-		Key:   cm.Key,
-		Value: cm.Value,
+		Op:     cm.Op,
+		Bucket: cm.Bucket,
+		Key:    cm.Key,
+		Value:  cm.Value,
 	}
 	reply, err := rpc.NewRiotRPCClient().RPCRequest(rpcAddr, &opRequest)
 	if reply.Status != 1 {
@@ -74,13 +82,33 @@ func (cm Command) DoDel() error {
 	cfg := config.GetConfigure()
 	rpcAddr := fmt.Sprintf("%s:%s", cfg.LeaderRpcC.Addr, cfg.LeaderRpcC.Port)
 	opRequest := pb.OpRequest{
-		Op:    cm.Op,
-		Key:   cm.Key,
-		Value: cm.Value,
+		Op:     cm.Op,
+		Bucket: cm.Bucket,
+		Key:    cm.Key,
+		Value:  cm.Value,
 	}
 	reply, err := rpc.NewRiotRPCClient().RPCRequest(rpcAddr, &opRequest)
 	if reply.Status != 1 {
 		err = fmt.Errorf("%s", reply.Msg)
 	}
 	return err
+}
+
+func (cm Command) GetBucket() (interface{}, error) {
+	cfg := config.GetConfigure()
+	rpcAddr := fmt.Sprintf("%s:%s", cfg.LeaderRpcC.Addr, cfg.LeaderRpcC.Port)
+	opRequest := pb.OpRequest{
+		Op:     cm.Op,
+		Bucket: cm.Bucket,
+		Key:    cm.Key,
+		Value:  cm.Value,
+	}
+	reply, err := rpc.NewRiotRPCClient().RPCRequest(rpcAddr, &opRequest)
+	if err != nil {
+		return nil, err
+	}
+	if reply.Status != 1 {
+		return nil, fmt.Errorf("%s", reply.Msg)
+	}
+	return reply.Value, nil
 }

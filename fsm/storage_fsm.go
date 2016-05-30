@@ -13,14 +13,16 @@ const (
 
 const defaultBucket  = "0"
 type RiotStorage interface {
-	Get([]byte) ([]byte, error)
-	Set([]byte, []byte) error
-	Del([]byte) error
+	// bucket, key
+	Get([]byte, []byte) ([]byte, error)
+	// bucket, key, value
+	Set([]byte, []byte, []byte) error
+	// bucket, key
+	Del([]byte, []byte) error
 	Rec() <-chan store.Iterm
 }
 
-type RiotStorageFactory struct {
-}
+type RiotStorageFactory struct {}
 
 var rsf *RiotStorageFactory
 

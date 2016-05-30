@@ -92,6 +92,8 @@ func main() {
 		// set app http router
 		m := mux.NewRouter()
 		m.Handle("/riot/key/{key}", &handler.RiotHandler{})
+		m.Handle("/riot/bucket", &handler.RiotBucketHandler{})
+		m.Headers("/riot/bucket/{bucket}/key/{key}", &handler.RiotHandler{})
 		m.HandleFunc("/riot/admin/{cmd}", handler.AdminHandlerFunc)
 		if err := http.ListenAndServe(cfg.SC.Addr+":"+cfg.SC.Port, m); err != nil {
 			logger.Error(err)
@@ -132,11 +134,10 @@ func join(cfg *config.Configure, joinAddr string) {
 }
 
 func updateShareMemory(cfg *config.Configure) {
-
+	share.ShCache.StoreBackendType = cfg.RaftC.StoreBackend
 	go func() {
 		for {
 			time.Sleep(time.Second * 3)
-
 			// get leaderName
 			r := cluster.SingleCluster().R
 			if cfg.RaftC.AddrString() == r.Leader() {
@@ -146,6 +147,8 @@ func updateShareMemory(cfg *config.Configure) {
 					Key:   "",
 					Value: []byte(cfg.RpcC.AddrString()),
 				}
+				share.ShCache.LRPC.Addr, share.ShCache.LRPC.Port = cfg.RpcC.Addr, cfg.RpcC.Port
+				opRequest.Value, _ =  json.Marshal(share.ShCache)
 				b, _ := json.Marshal(opRequest)
 				err := r.Apply(b, 3)
 				if err != nil && err.Error() != nil {
@@ -155,6 +158,10 @@ func updateShareMemory(cfg *config.Configure) {
 				time.Sleep(time.Second * 5)
 			}
 			cfg.LeaderRpcC.Addr, cfg.LeaderRpcC.Port = share.ShCache.LRPC.Addr, share.ShCache.LRPC.Port
+			// all the node backend store type must be same
+			if share.ShCache.StoreBackendType != cfg.RaftC.StoreBackend {
+				logger.Fatal("all raft node backend store type muset be same")
+			}
 		}
 	}()
 }

@@ -5,13 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/laohanlinux/riot/rpc/pb"
 	"github.com/laohanlinux/riot/share"
 	"github.com/laohanlinux/riot/store"
+	"github.com/laohanlinux/riot/command"
 
 	"github.com/hashicorp/raft"
 	"github.com/laohanlinux/go-logger/logger"
@@ -19,7 +19,8 @@ import (
 )
 
 var ErrNotFound = fmt.Errorf("the key's value is nil.")
-var ErrInvalidCmd = fmt.Errorf("The command is invalid")
+var ErrInvalidCmd = fmt.Errorf("the command is invalid")
+// var ErrInvalidBackendStore = fmt.Errorf("the store backend must be boltdb")
 
 func NewStorageFSM(rs RiotStorage) *StorageFSM {
 	return &StorageFSM{
@@ -51,16 +52,18 @@ func (s *StorageFSM) Apply(log *raft.Log) interface{} {
 
 	var err error
 	switch req.Op {
-	case "SET":
+	case command.CmdSet:
 		err = s.rs.Set([]byte(req.Key), req.Value)
-	case "DEL":
+	case command.CmdDel:
 		err = s.rs.Del([]byte(req.Key))
-	case "SHARE":
-		addr := string(req.Value)
-		idx := strings.Index(addr, ":")
-		share.ShCache.LRPC.Addr = addr[:idx]
-		share.ShCache.LRPC.Port = addr[idx+1:]
-		//logger.Debug("update share cache meory:", string(req.Value), share.ShCache.LRPC.Addr, share.ShCache.LRPC.Port)
+	case command.CmdCreateBucket:
+		rs, _ := s.rs.(store.BoltdbStore)
+		err = rs.CreateBucket(req.Bucket)
+	case command.CmdDelBucket:
+		rs, _ := s.rs.(store.BoltdbStore)
+		err = rs.DelBucket(req.Bucket)
+	case command.CmdShare:
+		err = json.Unmarshal(req.Value, share.ShCache)
 	default:
 		err = ErrInvalidCmd
 	}
@@ -82,6 +85,13 @@ func (s *StorageFSM) Get(key string) ([]byte, error) {
 		return nil, err
 	}
 	return value, nil
+}
+
+func (s *StorageFSM) GetBucket(bucket string)(interface{}, error){
+	s.l.Lock()
+	defer s.l.Unlock()
+	rs, _ := s.rs.(store.BoltdbStore)
+	return rs.GetBucket([]byte(bucket))
 }
 
 // Snapshot .
@@ -152,7 +162,7 @@ func (s *StorageSnapshot) Persist(sink raft.SnapshotSink) error {
 				return err
 			}
 			bSize := uint16(len(data))
-			buf := make([]byte, bSize+2)
+			buf := make([]byte, bSize + 2)
 			binary.LittleEndian.PutUint16(buf[:2], bSize)
 			copy(buf[2:], data)
 			if _, err = sink.Write(buf); err != nil {

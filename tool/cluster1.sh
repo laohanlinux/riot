@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 pid=`ps -ef | grep riot | awk '{print $2}'`
 kill `echo $pid`
 cd ..
