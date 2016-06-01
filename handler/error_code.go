@@ -4,16 +4,16 @@ import "encoding/json"
 
 // ...
 const (
-	Ok             = "ok"
-	OpErr          = "operation errror"
-	NetErr         = "net work timeout"
-	InternalErr    = "riot server error"
-	InvalidKey     = "invalid key"
+	Ok = "ok"
+	OpErr = "operation errror"
+	NetErr = "net work timeout"
+	InternalErr = "riot server error"
+	InvalidKey = "invalid key"
 	InvalidRequest = "invalid request"
-	QsInvalid      = "invalid query strategies"
-	NotFound       = "not found"
+	QsInvalid = "invalid query strategies"
+	NotFound = "not found"
 	NotExistBucket = "not exist the bucket"
-	InvalidBucket  = "invalid bucket"
+	InvalidBucket = "invalid bucket"
 )
 
 var msgErrCodeMap map[string]errCodeObj

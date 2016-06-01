@@ -41,10 +41,16 @@ type OpRequest struct {
 	Bucket string `protobuf:"bytes,4,opt,name=bucket" json:"bucket,omitempty"`
 }
 
-func (m *OpRequest) Reset()                    { *m = OpRequest{} }
-func (m *OpRequest) String() string            { return proto.CompactTextString(m) }
-func (*OpRequest) ProtoMessage()               {}
-func (*OpRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+func (m *OpRequest) Reset() {
+	*m = OpRequest{}
+}
+func (m *OpRequest) String() string {
+	return proto.CompactTextString(m)
+}
+func (*OpRequest) ProtoMessage() {}
+func (*OpRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor0, []int{0}
+}
 
 type OpReply struct {
 	Status  int32  `protobuf:"varint,1,opt,name=status" json:"status,omitempty"`
@@ -53,10 +59,16 @@ type OpReply struct {
 	ErrCode int32  `protobuf:"varint,4,opt,name=errCode" json:"errCode,omitempty"`
 }
 
-func (m *OpReply) Reset()                    { *m = OpReply{} }
-func (m *OpReply) String() string            { return proto.CompactTextString(m) }
-func (*OpReply) ProtoMessage()               {}
-func (*OpReply) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+func (m *OpReply) Reset() {
+	*m = OpReply{}
+}
+func (m *OpReply) String() string {
+	return proto.CompactTextString(m)
+}
+func (*OpReply) ProtoMessage() {}
+func (*OpReply) Descriptor() ([]byte, []int) {
+	return fileDescriptor0, []int{1}
+}
 
 func init() {
 	proto.RegisterType((*OpRequest)(nil), "pb.OpRequest")

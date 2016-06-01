@@ -163,7 +163,7 @@ func (s *StorageSnapshot) Persist(sink raft.SnapshotSink) error {
 				return err
 			}
 			bSize := uint16(len(data))
-			buf := make([]byte, bSize+2)
+			buf := make([]byte, bSize + 2)
 			binary.LittleEndian.PutUint16(buf[:2], bSize)
 			copy(buf[2:], data)
 			if _, err = sink.Write(buf); err != nil {

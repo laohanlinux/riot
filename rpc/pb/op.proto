@@ -3,19 +3,52 @@ syntax = "proto3";
 package pb;
 
 service RiotGossip {
-    rpc OpRPC(OpRequest) returns (OpReply) {}
+    rpc OpRPC (OpRequest) returns (OpReply) {
+    }
 }
 
 message OpRequest {
-    string op = 1;
-    string key= 2;
-    bytes value = 3;
-    string bucket = 4;
+    string
+    op
+    =
+    1
+    ;
+    string
+    key
+    =
+    2
+    ;
+    bytes
+    value
+    =
+    3
+    ;
+    string
+    bucket
+    =
+    4
+    ;
 }
 
 message OpReply {
-    int32 status = 1;
-    string msg = 2;
-    bytes value = 3;
-    int32 errCode = 4;
+    int32
+    status
+    =
+    1
+    ;
+    string
+    msg
+    =
+    2
+    ;
+    bytes
+    value
+    =
+    3
+    ;
+    int32
+    errCode
+    =
+    4
+    ;
 }

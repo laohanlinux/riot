@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	aErrOk    = iota
+	aErrOk = iota
 	aNetErr   // net work error
 	aBytesErr // the operation content is invalid format
 	aNoLeaderErr

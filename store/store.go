@@ -11,7 +11,7 @@ var ErrNotExistBucket = errors.New("the bucket not exists")
 
 const (
 	LevelDBStoreBackend = "leveldb"
-	BoltDBStoreBackend  = "boltdb"
+	BoltDBStoreBackend = "boltdb"
 )
 
 const defaultBucket = "0"
