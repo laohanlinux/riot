@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/laohanlinux/riot/cluster"
-	"github.com/laohanlinux/riot/command"
+	"github.com/laohanlinux/riot/cmd"
 	"github.com/laohanlinux/riot/config"
 	"github.com/laohanlinux/riot/handler"
 	"github.com/laohanlinux/riot/handler/msgpack"
@@ -93,7 +93,7 @@ func main() {
 		m := mux.NewRouter()
 		m.Handle("/riot/key/{key}", &handler.RiotHandler{})
 		m.Handle("/riot/bucket", &handler.RiotBucketHandler{})
-		m.Headers("/riot/bucket/{bucket}/key/{key}", &handler.RiotHandler{})
+		m.Handle("/riot/bucket/{bucket}/key/{key}", &handler.RiotHandler{})
 		m.HandleFunc("/riot/admin/{cmd}", handler.AdminHandlerFunc)
 		if err := http.ListenAndServe(cfg.SC.Addr+":"+cfg.SC.Port, m); err != nil {
 			logger.Error(err)
@@ -143,12 +143,12 @@ func updateShareMemory(cfg *config.Configure) {
 			if cfg.RaftC.AddrString() == r.Leader() {
 				// update leader addr info
 				opRequest := pb.OpRequest{
-					Op:    command.CmdShare,
+					Op:    cmd.CmdShare,
 					Key:   "",
 					Value: []byte(cfg.RpcC.AddrString()),
 				}
 				share.ShCache.LRPC.Addr, share.ShCache.LRPC.Port = cfg.RpcC.Addr, cfg.RpcC.Port
-				opRequest.Value, _ =  json.Marshal(share.ShCache)
+				opRequest.Value, _ = json.Marshal(share.ShCache)
 				b, _ := json.Marshal(opRequest)
 				err := r.Apply(b, 3)
 				if err != nil && err.Error() != nil {

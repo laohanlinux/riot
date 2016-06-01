@@ -6,8 +6,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/laohanlinux/riot/command"
-	"github.com/laohanlinux/riot/fsm"
+	"github.com/laohanlinux/riot/cluster"
+	"github.com/laohanlinux/riot/cmd"
+	"github.com/laohanlinux/riot/rpc"
 
 	"github.com/laohanlinux/go-logger/logger"
 	"github.com/laohanlinux/mux"
@@ -56,16 +57,16 @@ func getValue(w http.ResponseWriter, r *http.Request) (string, []byte, error) {
 	key := vars["key"]
 	bucket := vars["bucket"]
 
-	cmd := command.Command{
-		Op:     command.CmdGet,
+	rcmd := rpc.RpcCmd{
+		Op:     cmd.CmdGet,
 		Key:    key,
 		Bucket: bucket,
 	}
-	if len(cmd.Key) == 0 {
+	if len(rcmd.Key) == 0 {
 		return InvalidKey, nil, fmt.Errorf("The request key is Empty")
 	}
 
-	qs := command.QsRandom
+	qs := cmd.QsRandom
 	var err error
 	//Query strategires
 	qsValue := r.URL.Query().Get("qs")
@@ -75,12 +76,12 @@ func getValue(w http.ResponseWriter, r *http.Request) (string, []byte, error) {
 			return QsInvalid, nil, err
 		}
 	}
-	var value []byte
-	value, err = cmd.DoGet(qs)
-	if err != nil && err != fsm.ErrNotFound {
+
+	value, err := rcmd.DoGet(qs)
+	if err != nil && err != cluster.ErrNotFound {
 		return OpErr, value, err
 	}
-	if err == fsm.ErrNotFound {
+	if err == cluster.ErrNotFound {
 		return NotFound, nil, nil
 	}
 	return Ok, value, nil
@@ -94,8 +95,8 @@ func setValue(w http.ResponseWriter, r *http.Request) (string, error) {
 	if err != nil || value == nil || len(value) == 0 {
 		return InvalidRequest, err
 	}
-	cmd := command.Command{
-		Op:     command.CmdSet,
+	cmd := rpc.RpcCmd{
+		Op:     cmd.CmdSet,
 		Bucket: bucket,
 		Key:    key,
 		Value:  value,
@@ -111,18 +112,18 @@ func delValue(w http.ResponseWriter, r *http.Request) (string, error) {
 	vars := mux.Vars(r)
 	key := vars["key"]
 	bucket := vars["bucket"]
-	cmd := command.Command{
-		Op:     command.CmdDel,
+	cmd := rpc.RpcCmd{
+		Op:     cmd.CmdDel,
 		Bucket: bucket,
 		Key:    key,
 	}
 
 	err := cmd.DoDel()
-	if err != nil && err != fsm.ErrNotFound {
+	if err != nil && err != cluster.ErrNotFound {
 		return OpErr, err
 	}
 
-	if err == fsm.ErrNotFound {
+	if err == cluster.ErrNotFound {
 		return NotFound, nil
 	}
 	return Ok, nil

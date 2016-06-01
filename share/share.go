@@ -18,13 +18,13 @@ func (sc ShareCache) ToBytes() []byte {
 }
 
 type LeaderRpcAddr struct {
-	Addr string
-	Port string
+	Addr string `json:"addr"`
+	Port string `json:"port"`
 }
 
 type LeaderHTTAddr struct {
-	Addr string
-	Port string
+	Addr string `json:"addr"`
+	Port string `json:"port"`
 }
 
 // init the share cache content

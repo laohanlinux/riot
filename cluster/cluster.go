@@ -8,7 +8,7 @@ import (
 
 	"github.com/laohanlinux/go-logger/logger"
 	"github.com/laohanlinux/riot/config"
-	"github.com/laohanlinux/riot/fsm"
+	"github.com/laohanlinux/riot/store"
 
 	"github.com/hashicorp/raft"
 	"github.com/hashicorp/raft-boltdb"
@@ -18,7 +18,7 @@ type Cluster struct {
 	Dir         string
 	R           *raft.Raft
 	Stores      *raft.InmemStore
-	FSM         *fsm.StorageFSM
+	FSM         *StorageFSM
 	Snap        raft.SnapshotStore
 	Tran        raft.Transport
 	PeerStorage raft.PeerStore
@@ -38,16 +38,16 @@ func NewCluster(cfg *config.Configure, conf *raft.Config) *Cluster {
 	}
 	rCluster = &Cluster{}
 
-	store := raft.NewInmemStore()
-	rCluster.Stores = store
+	memStore := raft.NewInmemStore()
+	rCluster.Stores = memStore
 	// init raft applog and raftlog
 	applyStore := initRaftLog(cfg, conf)
 	// create a key/value store
 	if err := os.RemoveAll(cfg.RaftC.StoreBackendPath); err != nil {
 		logger.Fatal(err)
 	}
-	edbs := fsm.NewRiotStoreFactory(cfg.RaftC.StoreBackend, cfg.RaftC.StoreBackendPath)
-	rCluster.FSM = fsm.NewStorageFSM(edbs)
+	edbs := store.NewRiotStoreFactory(cfg.RaftC.StoreBackend, cfg.RaftC.StoreBackendPath)
+	rCluster.FSM = NewStorageFSM(edbs)
 
 	//create snap dir
 	snap, err := raft.NewFileSnapshotStore(cfg.RaftC.SnapshotStorage, 3, nil)
@@ -90,7 +90,7 @@ func (c *Cluster) Status() string { return c.R.State().String() }
 
 func (c *Cluster) Leader() string { return c.R.Leader() }
 
-func (c *Cluster) Get(key string) ([]byte, error) { return c.FSM.Get(key) }
+func (c *Cluster) Get(bucket, key []byte) ([]byte, error) { return c.FSM.Get(bucket, key) }
 
 func initRaftLog(cfg *config.Configure, conf *raft.Config) *raftboltdb.BoltStore {
 	// init raft app log

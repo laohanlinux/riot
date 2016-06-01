@@ -1,4 +1,4 @@
-package fsm
+package cluster
 
 import (
 	"encoding/binary"
@@ -8,10 +8,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/laohanlinux/riot/cmd"
 	"github.com/laohanlinux/riot/rpc/pb"
 	"github.com/laohanlinux/riot/share"
 	"github.com/laohanlinux/riot/store"
-	"github.com/laohanlinux/riot/command"
 
 	"github.com/hashicorp/raft"
 	"github.com/laohanlinux/go-logger/logger"
@@ -20,9 +20,10 @@ import (
 
 var ErrNotFound = fmt.Errorf("the key's value is nil.")
 var ErrInvalidCmd = fmt.Errorf("the command is invalid")
+
 // var ErrInvalidBackendStore = fmt.Errorf("the store backend must be boltdb")
 
-func NewStorageFSM(rs RiotStorage) *StorageFSM {
+func NewStorageFSM(rs store.RiotStorage) *StorageFSM {
 	return &StorageFSM{
 		l:  &sync.Mutex{},
 		rs: rs,
@@ -33,7 +34,7 @@ func NewStorageFSM(rs RiotStorage) *StorageFSM {
 // storage the key/value logs sequentially
 type StorageFSM struct {
 	l  *sync.Mutex
-	rs RiotStorage
+	rs store.RiotStorage
 }
 
 // Apply is noly call in out with master leader
@@ -52,17 +53,17 @@ func (s *StorageFSM) Apply(log *raft.Log) interface{} {
 
 	var err error
 	switch req.Op {
-	case command.CmdSet:
-		err = s.rs.Set([]byte(req.Key), req.Value)
-	case command.CmdDel:
-		err = s.rs.Del([]byte(req.Key))
-	case command.CmdCreateBucket:
-		rs, _ := s.rs.(store.BoltdbStore)
-		err = rs.CreateBucket(req.Bucket)
-	case command.CmdDelBucket:
-		rs, _ := s.rs.(store.BoltdbStore)
-		err = rs.DelBucket(req.Bucket)
-	case command.CmdShare:
+	case cmd.CmdSet:
+		err = s.rs.Set([]byte(req.Bucket), []byte(req.Key), req.Value)
+	case cmd.CmdDel:
+		err = s.rs.Del([]byte(req.Bucket), []byte(req.Key))
+	case cmd.CmdCreateBucket:
+		rs, _ := s.rs.(*store.BoltdbStore)
+		err = rs.CreateBucket([]byte(req.Bucket))
+	case cmd.CmdDelBucket:
+		rs, _ := s.rs.(*store.BoltdbStore)
+		err = rs.DelBucket([]byte(req.Bucket))
+	case cmd.CmdShare:
 		err = json.Unmarshal(req.Value, share.ShCache)
 	default:
 		err = ErrInvalidCmd
@@ -74,10 +75,10 @@ func (s *StorageFSM) Apply(log *raft.Log) interface{} {
 }
 
 // Get .
-func (s *StorageFSM) Get(key string) ([]byte, error) {
+func (s *StorageFSM) Get(bucket, key []byte) ([]byte, error) {
 	s.l.Lock()
 	defer s.l.Unlock()
-	value, err := s.rs.Get([]byte(key))
+	value, err := s.rs.Get(bucket, key)
 	if err == errors.ErrNotFound {
 		return nil, ErrNotFound
 	}
@@ -87,10 +88,10 @@ func (s *StorageFSM) Get(key string) ([]byte, error) {
 	return value, nil
 }
 
-func (s *StorageFSM) GetBucket(bucket string)(interface{}, error){
+func (s *StorageFSM) GetBucket(bucket []byte) (interface{}, error) {
 	s.l.Lock()
 	defer s.l.Unlock()
-	rs, _ := s.rs.(store.BoltdbStore)
+	rs, _ := s.rs.(*store.BoltdbStore)
 	return rs.GetBucket([]byte(bucket))
 }
 
@@ -135,7 +136,7 @@ func (s *StorageFSM) Restore(inp io.ReadCloser) error {
 			errMsg := fmt.Sprintf("decode json(%s) error in restore snapshot, error:%s", buf, err.Error())
 			panic(errMsg)
 		}
-		if err = s.rs.Set(iterm.Key, iterm.Value); err != nil {
+		if err = s.rs.Set(iterm.Bucket, iterm.Key, iterm.Value); err != nil {
 			panic("restore data into backend store happends error: " + err.Error())
 		}
 	}
@@ -145,7 +146,7 @@ func (s *StorageFSM) Restore(inp io.ReadCloser) error {
 
 // StorageSnapshot .
 type StorageSnapshot struct {
-	diskStore RiotStorage
+	diskStore store.RiotStorage
 }
 
 // Persist ...
@@ -162,7 +163,7 @@ func (s *StorageSnapshot) Persist(sink raft.SnapshotSink) error {
 				return err
 			}
 			bSize := uint16(len(data))
-			buf := make([]byte, bSize + 2)
+			buf := make([]byte, bSize+2)
 			binary.LittleEndian.PutUint16(buf[:2], bSize)
 			copy(buf[2:], data)
 			if _, err = sink.Write(buf); err != nil {
