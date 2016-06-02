@@ -7,14 +7,11 @@ import (
 )
 
 var ErrFinished = errors.New("all data is sent successfully")
-var ErrNotExistBucket = errors.New("the bucket not exists")
 
 const (
 	LevelDBStoreBackend = "leveldb"
 	BoltDBStoreBackend = "boltdb"
 )
-
-const defaultBucket = "0"
 
 type RiotStorage interface {
 	// bucket, key
@@ -39,7 +36,7 @@ func NewRiotStoreFactory(storeBackend, storePath string) RiotStorage {
 	case LevelDBStoreBackend:
 		return NewLeveldbStorage(storePath)
 	case BoltDBStoreBackend:
-		return NewBoltdbStore(storePath, []byte(defaultBucket))
+		return NewBoltdbStore(storePath)
 	default:
 		logger.Fatal("unkown the store backend:", storeBackend)
 	}

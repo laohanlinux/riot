@@ -1,7 +1,6 @@
 package store
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/boltdb/bolt"
@@ -10,35 +9,21 @@ import (
 
 type BoltdbStore struct {
 	*bolt.DB
-	c             chan Iterm
-	l             *sync.Mutex
-	defaultBucket []byte
+	c       chan Iterm
+	l       *sync.RWMutex
+	buckets map[string]bool
 }
 
-func NewBoltdbStore(dir string, defaultBucket []byte) *BoltdbStore {
+func NewBoltdbStore(dir string) *BoltdbStore {
 	db, err := bolt.Open(dir, 0600, nil)
 	if err != nil {
 		panic(err)
 	}
-	tx, err := db.Begin(true)
-	if err != nil {
-		panic(err)
-	}
-	defer tx.Rollback()
-
-	_, err = tx.CreateBucketIfNotExists(defaultBucket)
-	if err != nil {
-		panic(err)
-	}
-	if err = tx.Commit(); err != nil {
-		panic(err)
-	}
-
 	return &BoltdbStore{
 		DB:            db,
 		c:             make(chan Iterm),
-		l:             &sync.Mutex{},
-		defaultBucket: defaultBucket,
+		l:             &sync.RWMutex{},
+		buckets:       make(map[string]bool),
 	}
 }
 func (bdbs *BoltdbStore) CreateBucket(bucket []byte) error {
@@ -51,6 +36,13 @@ func (bdbs *BoltdbStore) CreateBucket(bucket []byte) error {
 	if err != nil {
 		return err
 	}
+
+	bdbs.l.Lock()
+	if _, ok := bdbs.buckets[string(bucket)]; !ok {
+		bdbs.buckets[string(bucket)] = true
+	}
+	bdbs.l.Unlock()
+
 	return tx.Commit()
 }
 
@@ -63,6 +55,13 @@ func (bdbs *BoltdbStore) DelBucket(bucket []byte) error {
 	if err = tx.DeleteBucket(bucket); err != nil {
 		return err
 	}
+
+	bdbs.l.Lock()
+	if _, ok := bdbs.buckets[string(bucket)]; ok {
+		delete(bdbs.buckets, string(bucket))
+	}
+	bdbs.l.Unlock()
+
 	return tx.Commit()
 }
 
@@ -74,8 +73,8 @@ func (bdbs *BoltdbStore) GetBucket(bucket []byte) (bolt.BucketStats, error) {
 	}
 	defer tx.Rollback()
 	bt := tx.Bucket(bucket)
-	if bt != nil {
-		return bStats, ErrNotExistBucket
+	if bt == nil {
+		return bStats, bolt.ErrBucketNotFound
 	}
 	bStats = bt.Stats()
 	return bStats, nil
@@ -86,6 +85,9 @@ func (bdbs *BoltdbStore) Get(bucket, key []byte) ([]byte, error) {
 	var value []byte
 	err := bdbs.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket(bucket)
+		if b == nil {
+			return bolt.ErrBucketNotFound
+		}
 		v := b.Get(key)
 		if v != nil {
 			value = make([]byte, len(v))
@@ -110,7 +112,7 @@ func (bdbs *BoltdbStore) Set(bucket, key, value []byte) error {
 	defer tx.Rollback()
 	bt := tx.Bucket(bucket)
 	if bt == nil {
-		return fmt.Errorf("the bucket is not exits")
+		return bolt.ErrBucketNotFound
 	}
 	if err := bt.Put(key, value); err != nil {
 		return err
@@ -138,20 +140,24 @@ func (bdbs *BoltdbStore) Close() error {
 
 func (bdbs *BoltdbStore) Rec() <-chan Iterm {
 	bdbs.l.Lock()
+	go bdbs.streamWorker()
 	return bdbs.c
 }
 
+// get all data spends too much time ...
 func (bdbs *BoltdbStore) streamWorker() {
-	bdbs.l.Lock()
 	defer bdbs.l.Unlock()
 	var iterm Iterm
 	bdbs.View(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket(bdbs.defaultBucket)
-		c := bucket.Cursor()
-		iterm.Err = nil
-		for k, v := c.First(); k != nil; k, v = c.Next() {
-			iterm.Key, iterm.Value = k, v
-			bdbs.c <- iterm
+		// scan all bucket
+		for bucketName, _ := range bdbs.buckets {
+			bucket := tx.Bucket([]byte(bucketName))
+			c := bucket.Cursor()
+			iterm.Err = nil
+			for k, v := c.First(); k != nil; k, v = c.Next() {
+				iterm.Bucket, iterm.Key, iterm.Value = []byte(bucketName), k, v
+				bdbs.c <- iterm
+			}
 		}
 		return nil
 	})

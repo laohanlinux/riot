@@ -16,6 +16,7 @@ import (
 	"github.com/hashicorp/raft"
 	"github.com/laohanlinux/go-logger/logger"
 	"github.com/syndtr/goleveldb/leveldb/errors"
+	"github.com/boltdb/bolt"
 )
 
 var ErrNotFound = fmt.Errorf("the key's value is nil.")
@@ -105,7 +106,7 @@ func (s *StorageFSM) Snapshot() (raft.FSMSnapshot, error) {
 	}, nil
 }
 
-// Restore data from persit location
+// Restore data from disk
 func (s *StorageFSM) Restore(inp io.ReadCloser) error {
 	//logger.Info("Must clear old dirty data, Excute StorageFSN.Restore ...")
 	s.l.Lock()
@@ -136,8 +137,16 @@ func (s *StorageFSM) Restore(inp io.ReadCloser) error {
 			errMsg := fmt.Sprintf("decode json(%s) error in restore snapshot, error:%s", buf, err.Error())
 			panic(errMsg)
 		}
-		if err = s.rs.Set(iterm.Bucket, iterm.Key, iterm.Value); err != nil {
+		if err = s.rs.Set(iterm.Bucket, iterm.Key, iterm.Value); err != nil && err != bolt.ErrBucketNotFound {
 			panic("restore data into backend store happends error: " + err.Error())
+		}
+		// the backend store is boltdb store and the bucket not exists
+		if err == bolt.ErrBucketNotFound {
+			// create new bucket
+			rs, _ := s.rs.(*store.BoltdbStore)
+			if err = rs.CreateBucket(iterm.Bucket); err != nil {
+				panic(err)
+			}
 		}
 	}
 
@@ -149,7 +158,8 @@ type StorageSnapshot struct {
 	diskStore store.RiotStorage
 }
 
-// Persist ...
+// Persist data into disk.
+// Notice: every record size can not lager than 131072 byte. mybe that is not good design.
 func (s *StorageSnapshot) Persist(sink raft.SnapshotSink) error {
 	logger.Info("Excute StorageSnapshot.Persist ... ")
 	defer sink.Close()

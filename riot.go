@@ -152,7 +152,7 @@ func updateShareMemory(cfg *config.Configure) {
 				b, _ := json.Marshal(opRequest)
 				err := r.Apply(b, 3)
 				if err != nil && err.Error() != nil {
-					logger.Error(r.Leader(), err.Error())
+					logger.Debug(r.Leader(), err.Error())
 					continue
 				}
 				time.Sleep(time.Second * 5)

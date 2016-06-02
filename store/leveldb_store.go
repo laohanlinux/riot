@@ -42,12 +42,12 @@ func (edbs *LeveldbStorage) Close() error {
 }
 
 func (edbs *LeveldbStorage) Rec() <-chan Iterm {
+	edbs.l.Lock()
 	go edbs.streamWorker()
 	return edbs.c
 }
 
 func (edbs *LeveldbStorage) streamWorker() {
-	edbs.l.Lock()
 	defer edbs.l.Unlock()
 	iter := edbs.NewIterator(nil, nil)
 	var iterm Iterm
