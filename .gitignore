@@ -7,3 +7,4 @@ tool/riot
 sftp-config.json
 tool/riot.exe
 .idea/
+.vscode/

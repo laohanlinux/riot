@@ -20,10 +20,10 @@ func NewBoltdbStore(dir string) *BoltdbStore {
 		panic(err)
 	}
 	return &BoltdbStore{
-		DB:            db,
-		c:             make(chan Iterm),
-		l:             &sync.RWMutex{},
-		buckets:       make(map[string]bool),
+		DB:      db,
+		c:       make(chan Iterm),
+		l:       &sync.RWMutex{},
+		buckets: make(map[string]bool),
 	}
 }
 func (bdbs *BoltdbStore) CreateBucket(bucket []byte) error {

@@ -13,10 +13,10 @@ import (
 	"github.com/laohanlinux/riot/share"
 	"github.com/laohanlinux/riot/store"
 
+	"github.com/boltdb/bolt"
 	"github.com/hashicorp/raft"
 	"github.com/laohanlinux/go-logger/logger"
 	"github.com/syndtr/goleveldb/leveldb/errors"
-	"github.com/boltdb/bolt"
 )
 
 var ErrNotFound = fmt.Errorf("the key's value is nil.")
@@ -75,7 +75,7 @@ func (s *StorageFSM) Apply(log *raft.Log) interface{} {
 	return err
 }
 
-// Get .
+// Get a value by bucketName and key
 func (s *StorageFSM) Get(bucket, key []byte) ([]byte, error) {
 	s.l.Lock()
 	defer s.l.Unlock()
@@ -89,6 +89,7 @@ func (s *StorageFSM) Get(bucket, key []byte) ([]byte, error) {
 	return value, nil
 }
 
+// GetBucket return the bucket detail info
 func (s *StorageFSM) GetBucket(bucket []byte) (interface{}, error) {
 	s.l.Lock()
 	defer s.l.Unlock()
@@ -96,7 +97,7 @@ func (s *StorageFSM) GetBucket(bucket []byte) (interface{}, error) {
 	return rs.GetBucket([]byte(bucket))
 }
 
-// Snapshot .
+// Snapshot fsm statation
 func (s *StorageFSM) Snapshot() (raft.FSMSnapshot, error) {
 	s.l.Lock()
 	defer s.l.Unlock()
@@ -153,7 +154,7 @@ func (s *StorageFSM) Restore(inp io.ReadCloser) error {
 	return nil
 }
 
-// StorageSnapshot .
+// StorageSnapshot for raft
 type StorageSnapshot struct {
 	diskStore store.RiotStorage
 }
@@ -173,7 +174,7 @@ func (s *StorageSnapshot) Persist(sink raft.SnapshotSink) error {
 				return err
 			}
 			bSize := uint16(len(data))
-			buf := make([]byte, bSize + 2)
+			buf := make([]byte, bSize+2)
 			binary.LittleEndian.PutUint16(buf[:2], bSize)
 			copy(buf[2:], data)
 			if _, err = sink.Write(buf); err != nil {
@@ -186,7 +187,7 @@ func (s *StorageSnapshot) Persist(sink raft.SnapshotSink) error {
 	}
 }
 
-// Release .
+// Release snapshot
 func (s *StorageSnapshot) Release() {
 	logger.Info("Excute StorageSnapshot.Release ...")
 }

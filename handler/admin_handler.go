@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	aErrOk = iota
+	aErrOk    = iota
 	aNetErr   // net work error
 	aBytesErr // the operation content is invalid format
 	aNoLeaderErr
@@ -26,13 +26,6 @@ const (
 	aUnkownCmdErr //
 	aSnapshotErr  // snapshot error
 )
-
-// type ResponseMsg struct {
-// 	Results interface{} `json:"results, omitempty"`
-// 	ErrCode int         `json:"error, omitempty"`
-// 	Time    float64     `json:"time,omitempty"`
-// 	start   time.Time
-// }
 
 func AdminHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()

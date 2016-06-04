@@ -10,7 +10,7 @@ var ErrFinished = errors.New("all data is sent successfully")
 
 const (
 	LevelDBStoreBackend = "leveldb"
-	BoltDBStoreBackend = "boltdb"
+	BoltDBStoreBackend  = "boltdb"
 )
 
 type RiotStorage interface {

@@ -13,8 +13,7 @@ import (
 	"github.com/laohanlinux/mux"
 )
 
-type RiotBucketHandler struct {
-}
+type RiotBucketHandler struct{}
 
 func (rbh *RiotBucketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var value []byte
@@ -49,7 +48,7 @@ func (rbh *RiotBucketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	}
 
 	w.WriteHeader(msg.httpCode)
-	w.Write(msg.toJsonBytes())
+	w.Write(msg.toJSONBytes())
 }
 
 func getBucket(w http.ResponseWriter, r *http.Request) (string, []byte, error) {

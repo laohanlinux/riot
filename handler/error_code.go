@@ -2,18 +2,17 @@ package handler
 
 import "encoding/json"
 
-// ...
 const (
-	Ok = "ok"
-	OpErr = "operation errror"
-	NetErr = "net work timeout"
-	InternalErr = "riot server error"
-	InvalidKey = "invalid key"
+	Ok             = "ok"
+	OpErr          = "operation errror"
+	NetErr         = "net work timeout"
+	InternalErr    = "riot server error"
+	InvalidKey     = "invalid key"
 	InvalidRequest = "invalid request"
-	QsInvalid = "invalid query strategies"
-	NotFound = "not found"
+	QsInvalid      = "invalid query strategies"
+	NotFound       = "not found"
 	NotExistBucket = "not exist the bucket"
-	InvalidBucket = "invalid bucket"
+	InvalidBucket  = "invalid bucket"
 )
 
 var msgErrCodeMap map[string]errCodeObj
@@ -24,7 +23,7 @@ type errCodeObj struct {
 	Info       string `json:"msg"`
 }
 
-func (err *errCodeObj) toJsonBytes() []byte {
+func (err *errCodeObj) toJSONBytes() []byte {
 	b, _ := json.Marshal(err)
 	return b
 }

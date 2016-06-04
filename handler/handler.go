@@ -49,7 +49,7 @@ func (rh *RiotHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(msg.httpCode)
-	w.Write(msg.toJsonBytes())
+	w.Write(msg.toJSONBytes())
 }
 
 func getValue(w http.ResponseWriter, r *http.Request) (string, []byte, error) {
