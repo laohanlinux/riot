@@ -95,7 +95,7 @@ func main() {
 		m.Handle("/riot/bucket", &handler.RiotBucketHandler{})
 		m.Handle("/riot/bucket/{bucket}/key/{key}", &handler.RiotHandler{})
 		m.HandleFunc("/riot/admin/{cmd}", handler.AdminHandlerFunc)
-		if err := http.ListenAndServe(cfg.SC.Addr + ":" + cfg.SC.Port, m); err != nil {
+		if err := http.ListenAndServe(cfg.SC.Addr+":"+cfg.SC.Port, m); err != nil {
 			logger.Error(err)
 		}
 	}()

@@ -43,7 +43,7 @@ func (rh *RiotHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	default:
 		errType = InvalidRequest
 	}
-	msg := msgErrCodeMap[errType]
+	msg := MsgErrCodeMap[errType]
 	if msg.httpCode == 200 {
 		w.Write(value)
 		return

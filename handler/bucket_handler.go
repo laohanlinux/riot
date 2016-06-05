@@ -41,7 +41,7 @@ func (rbh *RiotBucketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 		errType = InvalidRequest
 	}
 
-	msg := msgErrCodeMap[errType]
+	msg := MsgErrCodeMap[errType]
 	if msg.httpCode == 200 {
 		w.Write(value)
 		return

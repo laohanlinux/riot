@@ -15,28 +15,28 @@ const (
 	InvalidBucket  = "invalid bucket"
 )
 
-var msgErrCodeMap map[string]errCodeObj
+var MsgErrCodeMap map[string]ErrCodeObj
 
-type errCodeObj struct {
+type ErrCodeObj struct {
 	httpCode   int
 	StatusCode int    `json:"errCode"`
 	Info       string `json:"msg"`
 }
 
-func (err *errCodeObj) toJSONBytes() []byte {
+func (err *ErrCodeObj) toJSONBytes() []byte {
 	b, _ := json.Marshal(err)
 	return b
 }
 
 func init() {
-	msgErrCodeMap = make(map[string]errCodeObj)
-	msgErrCodeMap[Ok] = errCodeObj{200, 20000, Ok}
-	msgErrCodeMap[OpErr] = errCodeObj{400, 40001, OpErr}
-	msgErrCodeMap[NotFound] = errCodeObj{404, 40004, NotFound}
-	msgErrCodeMap[NotExistBucket] = errCodeObj{404, 40005, NotExistBucket}
-	msgErrCodeMap[NetErr] = errCodeObj{409, 40002, NetErr}
-	msgErrCodeMap[InvalidKey] = errCodeObj{403, 40003, InvalidKey}
-	msgErrCodeMap[InvalidRequest] = errCodeObj{403, 40005, InvalidRequest}
-	msgErrCodeMap[QsInvalid] = errCodeObj{403, 40006, QsInvalid}
-	msgErrCodeMap[InternalErr] = errCodeObj{500, 50000, InternalErr}
+	MsgErrCodeMap = make(map[string]ErrCodeObj)
+	MsgErrCodeMap[Ok] = ErrCodeObj{200, 20000, Ok}
+	MsgErrCodeMap[OpErr] = ErrCodeObj{400, 40001, OpErr}
+	MsgErrCodeMap[NotFound] = ErrCodeObj{404, 40004, NotFound}
+	MsgErrCodeMap[NotExistBucket] = ErrCodeObj{404, 40005, NotExistBucket}
+	MsgErrCodeMap[NetErr] = ErrCodeObj{409, 40002, NetErr}
+	MsgErrCodeMap[InvalidKey] = ErrCodeObj{403, 40003, InvalidKey}
+	MsgErrCodeMap[InvalidRequest] = ErrCodeObj{403, 40005, InvalidRequest}
+	MsgErrCodeMap[QsInvalid] = ErrCodeObj{403, 40006, QsInvalid}
+	MsgErrCodeMap[InternalErr] = ErrCodeObj{500, 50000, InternalErr}
 }
