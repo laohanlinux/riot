@@ -2,14 +2,13 @@ package cmd
 
 // ....
 const (
-	CmdGet = "GET"
-	CmdSet = "SET"
-	CmdDel = "DEL"
-	CmdShare = "SHARE"
-	CmdGetBucket = "GET BUCKET"
-	CmdSetBucket = "SET BUCKET"
+	CmdGet          = "GET"
+	CmdSet          = "SET"
+	CmdDel          = "DEL"
+	CmdShare        = "SHARE"
+	CmdGetBucket    = "GET BUCKET"
 	CmdCreateBucket = "CREATE BUCKET"
-	CmdDelBucket = "DEL BUCKET"
+	CmdDelBucket    = "DEL BUCKET"
 )
 
 const (

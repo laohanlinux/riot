@@ -9,6 +9,7 @@ import (
 	"github.com/laohanlinux/riot/cmd"
 	"github.com/laohanlinux/riot/rpc"
 
+	"github.com/boltdb/bolt"
 	"github.com/laohanlinux/go-logger/logger"
 	"github.com/laohanlinux/mux"
 )
@@ -40,7 +41,6 @@ func (rbh *RiotBucketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) 
 	default:
 		errType = InvalidRequest
 	}
-
 	msg := MsgErrCodeMap[errType]
 	if msg.httpCode == 200 {
 		w.Write(value)
@@ -68,10 +68,12 @@ func getBucket(w http.ResponseWriter, r *http.Request) (string, []byte, error) {
 	qs := cmd.QsConsistent
 
 	value, err := rcmd.DoGet(qs)
-	if err != nil && err != cluster.ErrNotFound {
+	if err != nil && err.Error() != bolt.ErrBucketNotFound.Error() {
+		logger.Error(err, bolt.ErrBucketNotFound)
 		return OpErr, value, err
 	}
-	if err == cluster.ErrNotFound {
+	logger.Error(err.Error, bolt.ErrBucketNotFound)
+	if err.Error() == bolt.ErrBucketNotFound.Error() {
 		return NotExistBucket, nil, nil
 	}
 
@@ -79,16 +81,16 @@ func getBucket(w http.ResponseWriter, r *http.Request) (string, []byte, error) {
 }
 
 func setBucket(w http.ResponseWriter, r *http.Request) (string, error) {
-	vars := mux.Vars(r)
-	bucket := vars["bucket"]
+	// vars := mux.Vars(r)
+	//	bucket := vars["bucket"]
 	value, err := ioutil.ReadAll(r.Body)
 	if err != nil || value == nil || len(value) == 0 {
 		return InvalidRequest, err
 	}
 
 	rcmd := rpc.RpcCmd{
-		Op:     cmd.CmdSetBucket,
-		Bucket: bucket,
+		Op:     cmd.CmdCreateBucket,
+		Bucket: string(value),
 		Key:    "",
 		Value:  nil,
 	}
