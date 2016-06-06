@@ -68,12 +68,12 @@ func getBucket(w http.ResponseWriter, r *http.Request) (string, []byte, error) {
 	qs := cmd.QsConsistent
 
 	value, err := rcmd.DoGet(qs)
+
 	if err != nil && err.Error() != bolt.ErrBucketNotFound.Error() {
 		logger.Error(err, bolt.ErrBucketNotFound)
 		return OpErr, value, err
 	}
-	logger.Error(err.Error, bolt.ErrBucketNotFound)
-	if err.Error() == bolt.ErrBucketNotFound.Error() {
+	if err != nil && err.Error() == bolt.ErrBucketNotFound.Error() {
 		return NotExistBucket, nil, nil
 	}
 

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/boltdb/bolt"
 	"github.com/laohanlinux/riot/cluster"
 	"github.com/laohanlinux/riot/cmd"
 	"github.com/laohanlinux/riot/rpc"
@@ -78,10 +79,10 @@ func getValue(w http.ResponseWriter, r *http.Request) (string, []byte, error) {
 	}
 
 	value, err := rcmd.DoGet(qs)
-	if err != nil && err != cluster.ErrNotFound {
+	if err != nil && err.Error() != bolt.ErrBucketNotFound.Error() {
 		return OpErr, value, err
 	}
-	if err == cluster.ErrNotFound {
+	if err != nil && err.Error() == bolt.ErrBucketNotFound.Error() {
 		return NotFound, nil, nil
 	}
 	return Ok, value, nil
