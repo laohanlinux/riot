@@ -26,6 +26,7 @@ func NewBoltdbStore(dir string) *BoltdbStore {
 		buckets: make(map[string]bool),
 	}
 }
+
 func (bdbs *BoltdbStore) CreateBucket(bucket []byte) error {
 	tx, err := bdbs.Begin(true)
 	if err != nil {

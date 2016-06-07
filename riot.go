@@ -7,19 +7,21 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"runtime"
 	"runtime/debug"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/laohanlinux/riot/cluster"
-	"github.com/laohanlinux/riot/cmd"
 	"github.com/laohanlinux/riot/config"
 	"github.com/laohanlinux/riot/handler"
 	"github.com/laohanlinux/riot/handler/msgpack"
+	"github.com/laohanlinux/riot/platform"
 	"github.com/laohanlinux/riot/rpc"
-	"github.com/laohanlinux/riot/rpc/pb"
 	"github.com/laohanlinux/riot/share"
+	"github.com/laohanlinux/riot/store"
 
 	"github.com/hashicorp/raft"
 	"github.com/laohanlinux/go-logger/logger"
@@ -87,19 +89,29 @@ func main() {
 			go join(cfg, joinAddr)
 		}
 		cluster.NewCluster(cfg, rc)
-		updateShareMemory(cfg)
+		go share.UpdateShareMemory(cfg, cluster.SingleCluster().R)
 
 		// set app http router
 		m := mux.NewRouter()
-		m.Handle("/riot/key/{key}", &handler.RiotHandler{})
-		m.Handle("/riot/bucket", &handler.RiotBucketHandler{})
-		m.Handle("/riot/bucket/{bucket}", &handler.RiotBucketHandler{})
-		m.Handle("/riot/bucket/{bucket}/key/{key}", &handler.RiotHandler{})
+		switch cfg.RaftC.StoreBackend {
+		case store.LevelDBStoreBackend:
+			m.Handle("/riot/key/{key}", &handler.RiotHandler{})
+		case store.BoltDBStoreBackend:
+			m.Handle("/riot/bucket", &handler.RiotBucketHandler{})
+			m.Handle("/riot/bucket/{bucket}", &handler.RiotBucketHandler{})
+			m.Handle("/riot/bucket/{bucket}/key/{key}", &handler.RiotHandler{})
+		default:
+			os.Exit(-1)
+		}
+
 		m.HandleFunc("/riot/admin/{cmd}", handler.AdminHandlerFunc)
 		if err := http.ListenAndServe(cfg.SC.Addr+":"+cfg.SC.Port, m); err != nil {
 			logger.Error(err)
 		}
 	}()
+
+	// regist the signal
+	platform.RegistSignal(syscall.SIGINT, syscall.SIGHUP)
 
 	gGroup.Wait()
 }
@@ -132,37 +144,4 @@ func join(cfg *config.Configure, joinAddr string) {
 		logger.Info(results)
 		return
 	}
-}
-
-func updateShareMemory(cfg *config.Configure) {
-	share.ShCache.StoreBackendType = cfg.RaftC.StoreBackend
-	go func() {
-		for {
-			time.Sleep(time.Second * 3)
-			// get leaderName
-			r := cluster.SingleCluster().R
-			if cfg.RaftC.AddrString() == r.Leader() {
-				// update leader addr info
-				opRequest := pb.OpRequest{
-					Op:    cmd.CmdShare,
-					Key:   "",
-					Value: []byte(cfg.RpcC.AddrString()),
-				}
-				share.ShCache.LRPC.Addr, share.ShCache.LRPC.Port = cfg.RpcC.Addr, cfg.RpcC.Port
-				opRequest.Value, _ = json.Marshal(share.ShCache)
-				b, _ := json.Marshal(opRequest)
-				err := r.Apply(b, 3)
-				if err != nil && err.Error() != nil {
-					logger.Debug(r.Leader(), err.Error())
-					continue
-				}
-				time.Sleep(time.Second * 5)
-			}
-			cfg.LeaderRpcC.Addr, cfg.LeaderRpcC.Port = share.ShCache.LRPC.Addr, share.ShCache.LRPC.Port
-			// all the node backend store type must be same
-			if share.ShCache.StoreBackendType != cfg.RaftC.StoreBackend {
-				logger.Fatal("all raft node backend store type muset be same")
-			}
-		}
-	}()
 }

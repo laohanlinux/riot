@@ -1,6 +1,5 @@
 package cmd
 
-// ....
 const (
 	CmdGet          = "GET"
 	CmdSet          = "SET"
