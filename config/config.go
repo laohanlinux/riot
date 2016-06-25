@@ -12,6 +12,11 @@ type ServerConfig struct {
 	Port string `toml:"port"`
 }
 
+type ServerMonConfig struct {
+	Addr string `toml:"addr"`
+	Port string `toml:"port"`
+}
+
 type RpcConfig struct {
 	Addr string `toml:"addr"`
 	Port string `toml:"port"`
@@ -53,7 +58,8 @@ type LogConfig struct {
 }
 
 type Configure struct {
-	SC         ServerConfig `toml:"server"`
+	SC         ServerConfig    `toml:"server"`
+	SMC        ServerMonConfig `toml:"server_monitor"`
 	LeaderRpcC LeaderRpcConfig
 	RpcC       RpcConfig  `toml:"rpc"`
 	RaftC      RaftConfig `toml:"raft"`

@@ -18,10 +18,10 @@ import (
 )
 
 const (
-	aErrOk    = iota
-	aNetErr   // net work error
-	aBytesErr // the operation content is invalid format
-	aNoLeaderErr
+	aErrOk        = iota
+	aNetErr       // net work error
+	aBytesErr     // the operation content is invalid format
+	aNoLeaderErr  // No Leader Node
 	aUnkownErr    // unkowned error
 	aUnkownCmdErr //
 	aSnapshotErr  // snapshot error
@@ -57,6 +57,7 @@ func AdminHandlerFunc(w http.ResponseWriter, r *http.Request) {
 			logger.Error(err)
 		}
 	default:
+		msg.ErrCode = aUnkownErr
 	}
 }
 
@@ -133,13 +134,12 @@ func doPost(w http.ResponseWriter, r *http.Request) (int, error) {
 		if leaderName == "" {
 			return aNoLeaderErr, fmt.Errorf("No Leader In Cluster")
 		}
-		logger.Info("The Leader Name is :", leaderName)
 		// 2. make sure the leader is itself
 		if !strings.HasPrefix(leaderName, remoteAdd["addr"]) && remoteAdd["addr"] != "" {
 			return aNoLeaderErr, nil
 		}
-		addr := remoteAdd["ip"] + ":" + remoteAdd["port"]
-		logger.Debug(addr, "will join the cluster, leader is :", leaderName)
+		addr := fmt.Sprintf("%s:%s", remoteAdd["ip"], remoteAdd["port"])
+		//logger.Debug(addr, "will join the cluster, leader is :", leaderName)
 		future := cluster.SingleCluster().R.AddPeer(addr)
 		if err := future.Error(); err != nil {
 			if err == raft.ErrKnownPeer {
@@ -173,7 +173,7 @@ func doDel(w http.ResponseWriter, r *http.Request) (int, error) {
 		if leaderName == "" {
 			return aNoLeaderErr, fmt.Errorf("No Leader In Cluster")
 		}
-		logger.Info("The Leader Name is :", leaderName)
+		//logger.Info("The Leader Name is :", leaderName)
 		// 2. make sure the leader is itself, can't not remove the leader node
 		if !strings.HasPrefix(leaderName, remoteAdd["addr"]) && remoteAdd["addr"] != "" {
 			return aNoLeaderErr, nil

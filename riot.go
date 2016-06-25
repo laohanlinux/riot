@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"runtime"
 	"runtime/debug"
@@ -33,6 +34,8 @@ func main() {
 	flag.StringVar(&cfgPath, "c", "", "configure path")
 	flag.StringVar(&joinAddr, "join", "", "host:port of leader to join")
 	flag.Parse()
+	var action = flag.Arg(0)
+
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	defer func() {
@@ -54,7 +57,6 @@ func main() {
 	if err != nil {
 		fmt.Println(err)
 	}
-	cfg.Info()
 
 	// Init log confiure
 	logger.SetConsole(true)
@@ -83,12 +85,14 @@ func main() {
 
 		// Init raft server
 		rc := raft.DefaultConfig()
+		if action == "dev" {
+			rc.SnapshotThreshold = 10
+		}
 		// set snapshot
 		rc.TrailingLogs = 10
 		if joinAddr != "" {
 			go join(cfg, joinAddr)
 		}
-		cluster.NewCluster(cfg, rc)
 		go share.UpdateShareMemory(cfg, cluster.SingleCluster().R)
 
 		// set app http router
@@ -103,11 +107,18 @@ func main() {
 		default:
 			os.Exit(-1)
 		}
-
 		m.HandleFunc("/riot/admin/{cmd}", handler.AdminHandlerFunc)
+		// register monitor
+		if action == "dev" {
+			go func() {
+				http.ListenAndServe(cfg.SMC.Addr+":"+cfg.SMC.Port, nil)
+			}()
+		}
+
 		if err := http.ListenAndServe(cfg.SC.Addr+":"+cfg.SC.Port, m); err != nil {
 			logger.Error(err)
 		}
+
 	}()
 
 	// regist the signal

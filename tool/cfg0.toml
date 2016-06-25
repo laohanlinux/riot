@@ -3,6 +3,10 @@
 addr = "localhost"
 port = "8080" 
 
+[server_monitor]
+addr = "localhost"
+port = "3780"
+
 [raft] 
 addr = "127.0.0.1"
 port = "12000"
