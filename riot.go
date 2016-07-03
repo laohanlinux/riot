@@ -7,19 +7,22 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	_ "net/http/pprof"
+	"os"
 	"runtime"
 	"runtime/debug"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/laohanlinux/riot/cluster"
-	"github.com/laohanlinux/riot/command"
 	"github.com/laohanlinux/riot/config"
 	"github.com/laohanlinux/riot/handler"
 	"github.com/laohanlinux/riot/handler/msgpack"
+	"github.com/laohanlinux/riot/platform"
 	"github.com/laohanlinux/riot/rpc"
-	"github.com/laohanlinux/riot/rpc/pb"
 	"github.com/laohanlinux/riot/share"
+	"github.com/laohanlinux/riot/store"
 
 	"github.com/hashicorp/raft"
 	"github.com/laohanlinux/go-logger/logger"
@@ -31,6 +34,8 @@ func main() {
 	flag.StringVar(&cfgPath, "c", "", "configure path")
 	flag.StringVar(&joinAddr, "join", "", "host:port of leader to join")
 	flag.Parse()
+	var action = flag.Arg(0)
+
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	defer func() {
@@ -52,7 +57,6 @@ func main() {
 	if err != nil {
 		fmt.Println(err)
 	}
-	cfg.Info()
 
 	// Init log confiure
 	logger.SetConsole(true)
@@ -74,7 +78,7 @@ func main() {
 		}
 		logger.Info("Start rpc server successfully")
 	}()
-
+	fmt.Println("hello word")
 	gGroup.Add(1)
 	go func() {
 		defer gGroup.Done()
@@ -82,21 +86,46 @@ func main() {
 		// Init raft server
 		rc := raft.DefaultConfig()
 		// set snapshot
-		rc.TrailingLogs = 10
+		if action == "dev" {
+			rc.SnapshotThreshold = 10
+			rc.TrailingLogs = 10
+		}
+		// set snapshot
 		if joinAddr != "" {
 			go join(cfg, joinAddr)
 		}
 		cluster.NewCluster(cfg, rc)
-		updateShareMemory(cfg)
+		// waitting the cluster init
+		go share.UpdateShareMemory(cfg, cluster.SingleCluster().R)
 
 		// set app http router
 		m := mux.NewRouter()
-		m.Handle("/riot/key/{key}", &handler.RiotHandler{})
+		switch cfg.RaftC.StoreBackend {
+		case store.LevelDBStoreBackend:
+			m.Handle("/riot/key/{key}", &handler.RiotHandler{})
+		case store.BoltDBStoreBackend:
+			m.Handle("/riot/bucket", &handler.RiotBucketHandler{})
+			m.Handle("/riot/bucket/{bucket}", &handler.RiotBucketHandler{})
+			m.Handle("/riot/bucket/{bucket}/key/{key}", &handler.RiotHandler{})
+		default:
+			os.Exit(-1)
+		}
 		m.HandleFunc("/riot/admin/{cmd}", handler.AdminHandlerFunc)
+		// register monitor
+		if action == "dev" {
+			go func() {
+				http.ListenAndServe(cfg.SMC.Addr+":"+cfg.SMC.Port, nil)
+			}()
+		}
+
 		if err := http.ListenAndServe(cfg.SC.Addr+":"+cfg.SC.Port, m); err != nil {
 			logger.Error(err)
 		}
+
 	}()
+
+	// regist the signal
+	platform.RegistSignal(syscall.SIGINT)
 
 	gGroup.Wait()
 }
@@ -129,32 +158,4 @@ func join(cfg *config.Configure, joinAddr string) {
 		logger.Info(results)
 		return
 	}
-}
-
-func updateShareMemory(cfg *config.Configure) {
-
-	go func() {
-		for {
-			time.Sleep(time.Second * 3)
-
-			// get leaderName
-			r := cluster.SingleCluster().R
-			if cfg.RaftC.AddrString() == r.Leader() {
-				// update leader addr info
-				opRequest := pb.OpRequest{
-					Op:    command.CmdShare,
-					Key:   "",
-					Value: []byte(cfg.RpcC.AddrString()),
-				}
-				b, _ := json.Marshal(opRequest)
-				err := r.Apply(b, 3)
-				if err != nil && err.Error() != nil {
-					logger.Error(r.Leader(), err.Error())
-					continue
-				}
-				time.Sleep(time.Second * 5)
-			}
-			cfg.LeaderRpcC.Addr, cfg.LeaderRpcC.Port = share.ShCache.LRPC.Addr, share.ShCache.LRPC.Port
-		}
-	}()
 }

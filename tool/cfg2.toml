@@ -1,7 +1,11 @@
 
 [server]
-addr = "localhost"
+addr = "127.0.0.1"
 port = "8082"
+
+[server_monitor]
+addr = "127.0.0.1"
+port = "3782"
 
 [raft]
 addr = "127.0.0.1"
@@ -13,7 +17,7 @@ store_backend = "leveldb"
 storage_backend_path = "raft2/storage_backend_path"
 raft_log_path = "raft2/raft_log_path"
 apply_log_path = "raft2/apply_log_path"
-enable_single_node = false 
+enable_single_node = false
 
 [rpc]
 addr = "127.0.0.1"

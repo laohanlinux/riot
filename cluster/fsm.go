@@ -1,27 +1,30 @@
-package fsm
+package cluster
 
 import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"io"
-	"strings"
 	"sync"
 	"time"
 
+	"github.com/laohanlinux/riot/cmd"
 	"github.com/laohanlinux/riot/rpc/pb"
 	"github.com/laohanlinux/riot/share"
 	"github.com/laohanlinux/riot/store"
 
+	"github.com/boltdb/bolt"
 	"github.com/hashicorp/raft"
 	"github.com/laohanlinux/go-logger/logger"
 	"github.com/syndtr/goleveldb/leveldb/errors"
 )
 
 var ErrNotFound = fmt.Errorf("the key's value is nil.")
-var ErrInvalidCmd = fmt.Errorf("The command is invalid")
+var ErrInvalidCmd = fmt.Errorf("the command is invalid")
 
-func NewStorageFSM(rs RiotStorage) *StorageFSM {
+// var ErrInvalidBackendStore = fmt.Errorf("the store backend must be boltdb")
+
+func NewStorageFSM(rs store.RiotStorage) *StorageFSM {
 	return &StorageFSM{
 		l:  &sync.Mutex{},
 		rs: rs,
@@ -32,7 +35,7 @@ func NewStorageFSM(rs RiotStorage) *StorageFSM {
 // storage the key/value logs sequentially
 type StorageFSM struct {
 	l  *sync.Mutex
-	rs RiotStorage
+	rs store.RiotStorage
 }
 
 // Apply is noly call in out with master leader
@@ -51,16 +54,18 @@ func (s *StorageFSM) Apply(log *raft.Log) interface{} {
 
 	var err error
 	switch req.Op {
-	case "SET":
-		err = s.rs.Set([]byte(req.Key), req.Value)
-	case "DEL":
-		err = s.rs.Del([]byte(req.Key))
-	case "SHARE":
-		addr := string(req.Value)
-		idx := strings.Index(addr, ":")
-		share.ShCache.LRPC.Addr = addr[:idx]
-		share.ShCache.LRPC.Port = addr[idx+1:]
-		//logger.Debug("update share cache meory:", string(req.Value), share.ShCache.LRPC.Addr, share.ShCache.LRPC.Port)
+	case cmd.CmdSet:
+		err = s.rs.Set([]byte(req.Bucket), []byte(req.Key), req.Value)
+	case cmd.CmdDel:
+		err = s.rs.Del([]byte(req.Bucket), []byte(req.Key))
+	case cmd.CmdCreateBucket:
+		rs, _ := s.rs.(*store.BoltdbStore)
+		err = rs.CreateBucket([]byte(req.Bucket))
+	case cmd.CmdDelBucket:
+		rs, _ := s.rs.(*store.BoltdbStore)
+		err = rs.DelBucket([]byte(req.Bucket))
+	case cmd.CmdShare:
+		err = json.Unmarshal(req.Value, share.ShCache)
 	default:
 		err = ErrInvalidCmd
 	}
@@ -70,11 +75,11 @@ func (s *StorageFSM) Apply(log *raft.Log) interface{} {
 	return err
 }
 
-// Get .
-func (s *StorageFSM) Get(key string) ([]byte, error) {
+// Get a value by bucketName and key
+func (s *StorageFSM) Get(bucket, key []byte) ([]byte, error) {
 	s.l.Lock()
 	defer s.l.Unlock()
-	value, err := s.rs.Get([]byte(key))
+	value, err := s.rs.Get(bucket, key)
 	if err == errors.ErrNotFound {
 		return nil, ErrNotFound
 	}
@@ -84,7 +89,15 @@ func (s *StorageFSM) Get(key string) ([]byte, error) {
 	return value, nil
 }
 
-// Snapshot .
+// GetBucket return the bucket detail info
+func (s *StorageFSM) GetBucket(bucket []byte) (interface{}, error) {
+	s.l.Lock()
+	defer s.l.Unlock()
+	rs, _ := s.rs.(*store.BoltdbStore)
+	return rs.GetBucket([]byte(bucket))
+}
+
+// Snapshot fsm statation
 func (s *StorageFSM) Snapshot() (raft.FSMSnapshot, error) {
 	s.l.Lock()
 	defer s.l.Unlock()
@@ -94,7 +107,7 @@ func (s *StorageFSM) Snapshot() (raft.FSMSnapshot, error) {
 	}, nil
 }
 
-// Restore data from persit location
+// Restore data from disk
 func (s *StorageFSM) Restore(inp io.ReadCloser) error {
 	//logger.Info("Must clear old dirty data, Excute StorageFSN.Restore ...")
 	s.l.Lock()
@@ -125,20 +138,29 @@ func (s *StorageFSM) Restore(inp io.ReadCloser) error {
 			errMsg := fmt.Sprintf("decode json(%s) error in restore snapshot, error:%s", buf, err.Error())
 			panic(errMsg)
 		}
-		if err = s.rs.Set(iterm.Key, iterm.Value); err != nil {
+		if err = s.rs.Set(iterm.Bucket, iterm.Key, iterm.Value); err != nil && err != bolt.ErrBucketNotFound {
 			panic("restore data into backend store happends error: " + err.Error())
+		}
+		// the backend store is boltdb store and the bucket not exists
+		if err == bolt.ErrBucketNotFound {
+			// create new bucket
+			rs, _ := s.rs.(*store.BoltdbStore)
+			if err = rs.CreateBucket(iterm.Bucket); err != nil {
+				panic(err)
+			}
 		}
 	}
 
 	return nil
 }
 
-// StorageSnapshot .
+// StorageSnapshot for raft
 type StorageSnapshot struct {
-	diskStore RiotStorage
+	diskStore store.RiotStorage
 }
 
-// Persist ...
+// Persist data into disk.
+// Notice: every record size can not lager than 131072 byte. mybe that is not good design.
 func (s *StorageSnapshot) Persist(sink raft.SnapshotSink) error {
 	logger.Info("Excute StorageSnapshot.Persist ... ")
 	defer sink.Close()
@@ -165,7 +187,7 @@ func (s *StorageSnapshot) Persist(sink raft.SnapshotSink) error {
 	}
 }
 
-// Release .
+// Release snapshot
 func (s *StorageSnapshot) Release() {
 	logger.Info("Excute StorageSnapshot.Release ...")
 }

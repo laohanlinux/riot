@@ -7,13 +7,14 @@ import (
 	"time"
 
 	"github.com/laohanlinux/riot/cluster"
+	"github.com/laohanlinux/riot/cmd"
 	"github.com/laohanlinux/riot/rpc/pb"
 
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 
-//.
+// errCode for rpc remote call
 const (
 	Ok = iota
 	ErrRPCApply
@@ -31,16 +32,31 @@ func NewRpcServer(addr string) (RiotRPCService, error) {
 	return rrpc, grpcServer.Serve(serverLis)
 }
 
-// RiotRPCService .
+// RiotRPCService is rpc server object
 type RiotRPCService struct{}
 
 // OpRPC handles rpc reuqest for set and del operation
 func (rcs *RiotRPCService) OpRPC(ctx context.Context, r *pb.OpRequest) (*pb.OpReply, error) {
-	b, _ := json.Marshal(r)
-	// get the local fsm
-	raftNode := cluster.SingleCluster().R
-	future := raftNode.Apply(b, time.Second)
-	if err := future.Error(); err != nil {
+	var err error
+	var value []byte
+	switch r.Op {
+	// need not to do raftNode
+	case cmd.CmdGetBucket:
+		var bStats interface{}
+		bStats, err = cluster.SingleCluster().FSM.GetBucket([]byte(r.Bucket))
+		if err == nil {
+			value, err = json.Marshal(bStats)
+		}
+	// need not to do raftNode
+	case cmd.CmdGet:
+		value, err = cluster.SingleCluster().FSM.Get([]byte(r.Bucket), r.Value)
+	default:
+		raftNode := cluster.SingleCluster().R
+		b, _ := json.Marshal(r)
+		err = raftNode.Apply(b, time.Second).Error()
+	}
+
+	if err != nil {
 		return &pb.OpReply{
 			Status:  0,
 			ErrCode: ErrRPCApply,
@@ -51,5 +67,6 @@ func (rcs *RiotRPCService) OpRPC(ctx context.Context, r *pb.OpRequest) (*pb.OpRe
 		Status:  1,
 		ErrCode: Ok,
 		Msg:     "",
+		Value:   value,
 	}, nil
 }

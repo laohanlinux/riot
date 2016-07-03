@@ -3,8 +3,9 @@ package rpc
 import (
 	"sync"
 
-	"github.com/laohanlinux/go-logger/logger"
 	"github.com/laohanlinux/riot/rpc/pb"
+
+	"github.com/laohanlinux/go-logger/logger"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )

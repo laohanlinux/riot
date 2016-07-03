@@ -4,22 +4,19 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"strconv"
 
-	"github.com/boltdb/bolt"
 	"github.com/laohanlinux/riot/cluster"
 	"github.com/laohanlinux/riot/cmd"
 	"github.com/laohanlinux/riot/rpc"
 
+	"github.com/boltdb/bolt"
 	"github.com/laohanlinux/go-logger/logger"
 	"github.com/laohanlinux/mux"
 )
 
-// RiotHandler ...
-type RiotHandler struct{}
+type RiotBucketHandler struct{}
 
-// ServeHTTP .
-func (rh *RiotHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (rbh *RiotBucketHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var value []byte
 	var err error
 	var errType string
@@ -27,19 +24,19 @@ func (rh *RiotHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case "GET":
-		errType, value, err = getValue(w, r)
+		errType, value, err = getBucket(w, r)
 		if err != nil {
 			logger.Error(err)
 		}
 	case "DELETE":
-		errType, err = delValue(w, r)
+		errType, err = delBucket(w, r)
 		if err != nil {
 			logger.Error(err)
 		}
 	case "POST":
-		errType, err = setValue(w, r)
+		errType, err = setBucket(w, r)
 		if err != nil {
-			logger.Error(errType, err)
+			logger.Error(err)
 		}
 	default:
 		errType = InvalidRequest
@@ -49,77 +46,73 @@ func (rh *RiotHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.Write(value)
 		return
 	}
+
 	w.WriteHeader(msg.httpCode)
 	w.Write(msg.toJSONBytes())
 }
 
-func getValue(w http.ResponseWriter, r *http.Request) (string, []byte, error) {
+func getBucket(w http.ResponseWriter, r *http.Request) (string, []byte, error) {
 	vars := mux.Vars(r)
-	key := vars["key"]
 	bucket := vars["bucket"]
-
 	rcmd := rpc.RpcCmd{
-		Op:     cmd.CmdGet,
-		Key:    key,
+		Op:     cmd.CmdGetBucket,
 		Bucket: bucket,
-	}
-	if len(rcmd.Key) == 0 {
-		return InvalidKey, nil, fmt.Errorf("The request key is Empty")
+		Key:    "",
+		Value:  nil,
 	}
 
-	qs := cmd.QsRandom
-	var err error
-	//Query strategires
-	qsValue := r.URL.Query().Get("qs")
-	if qsValue == "" {
-		qs, err = strconv.Atoi(qsValue)
-		if err != nil {
-			return QsInvalid, nil, err
-		}
+	if len(bucket) == 0 {
+		return InvalidBucket, nil, fmt.Errorf("the request bucket is empty")
 	}
+
+	qs := cmd.QsConsistent
 
 	value, err := rcmd.DoGet(qs)
+
 	if err != nil && err.Error() != bolt.ErrBucketNotFound.Error() {
+		logger.Error(err, bolt.ErrBucketNotFound)
 		return OpErr, value, err
 	}
 	if err != nil && err.Error() == bolt.ErrBucketNotFound.Error() {
-		return NotFound, nil, nil
+		return NotExistBucket, nil, nil
 	}
+
 	return Ok, value, nil
 }
 
-func setValue(w http.ResponseWriter, r *http.Request) (string, error) {
-	vars := mux.Vars(r)
-	key := vars["key"]
-	bucket := vars["bucket"]
+func setBucket(w http.ResponseWriter, r *http.Request) (string, error) {
+	// vars := mux.Vars(r)
+	//	bucket := vars["bucket"]
 	value, err := ioutil.ReadAll(r.Body)
 	if err != nil || value == nil || len(value) == 0 {
 		return InvalidRequest, err
 	}
-	cmd := rpc.RpcCmd{
-		Op:     cmd.CmdSet,
-		Bucket: bucket,
-		Key:    key,
-		Value:  value,
+
+	rcmd := rpc.RpcCmd{
+		Op:     cmd.CmdCreateBucket,
+		Bucket: string(value),
+		Key:    "",
+		Value:  nil,
 	}
-	err = cmd.DoSet()
+
+	err = rcmd.DoSet()
 	if err != nil {
 		return InternalErr, err
 	}
 	return Ok, nil
 }
 
-func delValue(w http.ResponseWriter, r *http.Request) (string, error) {
+func delBucket(w http.ResponseWriter, r *http.Request) (string, error) {
 	vars := mux.Vars(r)
-	key := vars["key"]
 	bucket := vars["bucket"]
 	cmd := rpc.RpcCmd{
-		Op:     cmd.CmdDel,
+		Op:     cmd.CmdDelBucket,
 		Bucket: bucket,
-		Key:    key,
+		Key:    "",
+		Value:  nil,
 	}
 
-	err := cmd.DoDel()
+	err := cmd.DoSet()
 	if err != nil && err != cluster.ErrNotFound {
 		return OpErr, err
 	}
@@ -127,5 +120,6 @@ func delValue(w http.ResponseWriter, r *http.Request) (string, error) {
 	if err == cluster.ErrNotFound {
 		return NotFound, nil
 	}
+
 	return Ok, nil
 }

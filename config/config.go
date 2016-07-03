@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -8,6 +9,11 @@ import (
 )
 
 type ServerConfig struct {
+	Addr string `toml:"addr"`
+	Port string `toml:"port"`
+}
+
+type ServerMonConfig struct {
 	Addr string `toml:"addr"`
 	Port string `toml:"port"`
 }
@@ -53,11 +59,20 @@ type LogConfig struct {
 }
 
 type Configure struct {
-	SC         ServerConfig `toml:"server"`
+	SC         ServerConfig    `toml:"server"`
+	SMC        ServerMonConfig `toml:"server_monitor"`
 	LeaderRpcC LeaderRpcConfig
 	RpcC       RpcConfig  `toml:"rpc"`
 	RaftC      RaftConfig `toml:"raft"`
 	LogC       LogConfig  `toml:"log"`
+}
+
+func (cfg *Configure) DisplayConfigure() {
+	data, err := json.Marshal(cfg)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(string(data))
 }
 
 var c *Configure
