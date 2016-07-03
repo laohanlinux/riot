@@ -94,16 +94,9 @@ func main() {
 		if joinAddr != "" {
 			go join(cfg, joinAddr)
 		}
-
+		cluster.NewCluster(cfg, rc)
 		// waitting the cluster init
-		for {
-			if cluster.SingleCluster() == nil {
-				time.Sleep(time.Second)
-				continue
-			}
-			go share.UpdateShareMemory(cfg, cluster.SingleCluster().R)
-			break
-		}
+		go share.UpdateShareMemory(cfg, cluster.SingleCluster().R)
 
 		// set app http router
 		m := mux.NewRouter()
@@ -132,7 +125,7 @@ func main() {
 	}()
 
 	// regist the signal
-	platform.RegistSignal(syscall.SIGINT, syscall.SIGHUP)
+	platform.RegistSignal(syscall.SIGINT)
 
 	gGroup.Wait()
 }
