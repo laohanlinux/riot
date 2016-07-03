@@ -9,6 +9,7 @@ import (
 	"github.com/laohanlinux/riot/rpc/pb"
 )
 
+// RpcCmd of rpc remote call
 type RpcCmd struct {
 	Op     string
 	Bucket string
@@ -45,6 +46,7 @@ func (rc RpcCmd) DoGet(qs int) ([]byte, error) {
 	}
 }
 
+// DoSet of setting operation
 func (rc RpcCmd) DoSet() error {
 	cfg := config.GetConfigure()
 	rpcAddr := fmt.Sprintf("%s:%s", cfg.LeaderRpcC.Addr, cfg.LeaderRpcC.Port)
@@ -61,6 +63,7 @@ func (rc RpcCmd) DoSet() error {
 	return err
 }
 
+// DoDel of deleting operation
 func (rc RpcCmd) DoDel() error {
 	cfg := config.GetConfigure()
 	rpcAddr := fmt.Sprintf("%s:%s", cfg.LeaderRpcC.Addr, cfg.LeaderRpcC.Port)
@@ -77,6 +80,7 @@ func (rc RpcCmd) DoDel() error {
 	return err
 }
 
+// GetBucket for bucket info
 func (rc RpcCmd) GetBucket() (interface{}, error) {
 	cfg := config.GetConfigure()
 	rpcAddr := fmt.Sprintf("%s:%s", cfg.LeaderRpcC.Addr, cfg.LeaderRpcC.Port)

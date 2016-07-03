@@ -7,6 +7,7 @@ import (
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
+// LeveldbStorage is a backend store type
 type LeveldbStorage struct {
 	*leveldb.DB
 	c chan Iterm
@@ -26,24 +27,29 @@ func NewLeveldbStorage(dir string) *LeveldbStorage {
 	}
 }
 
+// Get a value by key
 func (edbs *LeveldbStorage) Get(_, key []byte) ([]byte, error) {
 	logger.Info("Get a value by ", string(key))
 	return edbs.DB.Get(key, nil)
 }
 
+// Set kv obeject
 func (edbs *LeveldbStorage) Set(_, key, value []byte) error {
 	logger.Info("Set a key/value:", string(key), string(value))
 	return edbs.DB.Put(key, value, nil)
 }
 
+// Del a kv obeject
 func (edbs *LeveldbStorage) Del(_, key []byte) error {
 	return edbs.DB.Delete(key, nil)
 }
 
+// Close backend store connected
 func (edbs *LeveldbStorage) Close() error {
 	return edbs.DB.Close()
 }
 
+// Rec a iterm, the iterm including key and value
 func (edbs *LeveldbStorage) Rec() <-chan Iterm {
 	edbs.l.Lock()
 	go edbs.streamWorker()
@@ -51,7 +57,6 @@ func (edbs *LeveldbStorage) Rec() <-chan Iterm {
 }
 
 // TODO:
-//
 // don't alloc new memory for every time,
 // because the iter.Key and iter.Value use same memory space every iter.
 func (edbs *LeveldbStorage) streamWorker() {

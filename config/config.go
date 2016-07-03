@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -64,6 +65,14 @@ type Configure struct {
 	RpcC       RpcConfig  `toml:"rpc"`
 	RaftC      RaftConfig `toml:"raft"`
 	LogC       LogConfig  `toml:"log"`
+}
+
+func (cfg *Configure) DisplayConfigure() {
+	data, err := json.Marshal(cfg)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(string(data))
 }
 
 var c *Configure

@@ -9,6 +9,7 @@ import (
 	"github.com/laohanlinux/go-logger/logger"
 )
 
+// RegistSignal for listening signals
 func RegistSignal(sig ...os.Signal) {
 	signalChan := make(chan os.Signal)
 	go func() {

@@ -14,6 +14,7 @@ import (
 
 var ShCache *ShareCache
 
+// ShareCache for nodes share cache object
 type ShareCache struct {
 	LRPC             *LeaderRpcAddr `json:"lrpc"`
 	LHA              *LeaderHTTAddr `json:"lha"`
@@ -25,11 +26,13 @@ func (sc ShareCache) ToBytes() []byte {
 	return b
 }
 
+// LeaderRpcAddr of leader node rpc address
 type LeaderRpcAddr struct {
 	Addr string `json:"addr"`
 	Port string `json:"port"`
 }
 
+// LeaderHTTAddr of leader node http address
 type LeaderHTTAddr struct {
 	Addr string `json:"addr"`
 	Port string `json:"port"`
@@ -46,6 +49,7 @@ func init() {
 	}
 }
 
+// UpdateShareMemory to update share memory object
 func UpdateShareMemory(cfg *config.Configure, r *raft.Raft) {
 	ShCache.StoreBackendType = cfg.RaftC.StoreBackend
 

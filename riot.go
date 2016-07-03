@@ -78,22 +78,32 @@ func main() {
 		}
 		logger.Info("Start rpc server successfully")
 	}()
-
+	fmt.Println("hello word")
 	gGroup.Add(1)
 	go func() {
 		defer gGroup.Done()
 
 		// Init raft server
 		rc := raft.DefaultConfig()
+		// set snapshot
 		if action == "dev" {
 			rc.SnapshotThreshold = 10
+			rc.TrailingLogs = 10
 		}
 		// set snapshot
-		rc.TrailingLogs = 10
 		if joinAddr != "" {
 			go join(cfg, joinAddr)
 		}
-		go share.UpdateShareMemory(cfg, cluster.SingleCluster().R)
+
+		// waitting the cluster init
+		for {
+			if cluster.SingleCluster() == nil {
+				time.Sleep(time.Second)
+				continue
+			}
+			go share.UpdateShareMemory(cfg, cluster.SingleCluster().R)
+			break
+		}
 
 		// set app http router
 		m := mux.NewRouter()

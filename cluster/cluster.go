@@ -58,7 +58,7 @@ func NewCluster(cfg *config.Configure, conf *raft.Config) *Cluster {
 
 	// create transport
 	tranAddr := fmt.Sprintf("%s:%s", cfg.RaftC.Addr, cfg.RaftC.Port)
-	tran, err := raft.NewTCPTransport(tranAddr, nil, 3, 2 * time.Second, nil)
+	tran, err := raft.NewTCPTransport(tranAddr, nil, 3, 2*time.Second, nil)
 	if err != nil {
 		logger.Fatal(err)
 	}
@@ -86,6 +86,7 @@ func NewCluster(cfg *config.Configure, conf *raft.Config) *Cluster {
 	return rCluster
 }
 
+// Status of the node running info
 func (c *Cluster) Status() string {
 	return c.R.State().String()
 }
@@ -101,7 +102,7 @@ func (c *Cluster) Get(bucket, key []byte) ([]byte, error) {
 func initRaftLog(cfg *config.Configure, conf *raft.Config) *raftboltdb.BoltStore {
 	// init raft app log
 	logFile := path.Join(cfg.RaftC.RaftLogPath, "raft.log")
-	fp, err := os.OpenFile(logFile, os.O_WRONLY | os.O_CREATE | os.O_APPEND, 0644)
+	fp, err := os.OpenFile(logFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
 		panic(err)
 	}

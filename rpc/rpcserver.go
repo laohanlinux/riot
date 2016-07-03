@@ -14,7 +14,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-//.
+// errCode for rpc remote call
 const (
 	Ok = iota
 	ErrRPCApply
@@ -32,6 +32,7 @@ func NewRpcServer(addr string) (RiotRPCService, error) {
 	return rrpc, grpcServer.Serve(serverLis)
 }
 
+// RiotRPCService is rpc server object
 type RiotRPCService struct{}
 
 // OpRPC handles rpc reuqest for set and del operation

@@ -6,13 +6,17 @@ import (
 	"github.com/laohanlinux/go-logger/logger"
 )
 
+// ErrFinished indicates all data restore
 var ErrFinished = errors.New("all data is sent successfully")
 
 const (
+	// LevelDBStoreBackend of leveldb store
 	LevelDBStoreBackend = "leveldb"
-	BoltDBStoreBackend  = "boltdb"
+	// BoltDBStoreBackend of boltdb store
+	BoltDBStoreBackend = "boltdb"
 )
 
+// RiotStorage is a store interface
 type RiotStorage interface {
 	// bucket, key
 	Get([]byte, []byte) ([]byte, error)
@@ -23,6 +27,7 @@ type RiotStorage interface {
 	Rec() <-chan Iterm
 }
 
+// RiotStorageFactory is a store Factory.
 type RiotStorageFactory struct{}
 
 var rsf *RiotStorageFactory
