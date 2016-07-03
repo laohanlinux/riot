@@ -56,7 +56,6 @@ curl -v -XDELETE "http://localhost:8080/riot/bucket/student"
 
 ``` http
 curl -v "http://localhost:8080/riot/bucket/student"
-
 * Connected to localhost (127.0.0.1) port 8080 (#0)
 > GET /riot/bucket/student HTTP/1.1
 > Host: localhost:8080
@@ -68,8 +67,6 @@ curl -v "http://localhost:8080/riot/bucket/student"
 < Date: Sun, 03 Jul 2016 15:33:30 GMT
 < Content-Length: 201
 <
-{ [201 bytes data]
-100   201  100   201    0     0  32875      0 --:--:-- --:--:-- --:--:-- 33500
 * Connection #0 to host localhost left intact
 {
   "BranchPageN": 0,
@@ -103,7 +100,7 @@ curl -v  "http://localhost:8081/riot/key/lusi?qs=0"
 > User-Agent: curl/7.43.0
 > Accept: */*
 > 
-2016/07/03 23:56:56 leveldb_store.go:32 [info] Get a value by  lusi 
+ 
 < HTTP/1.1 200 OK
 < Content-Type: application/json
 < Date: Sun, 03 Jul 2016 15:56:56 GMT
@@ -151,8 +148,6 @@ curl -v -XPOST "http://localhost:8080/riot/key/lusi" -d '{"Age":18}'
 > Content-Type: application/x-www-form-urlencoded
 > 
 * upload completely sent off: 10 out of 10 bytes
-2016/07/03 23:54:27 rpcclient.go:36 [warn] New RPC Connect, rpc server addr: 127.0.0.1:32123 
-2016/07/03 23:54:27 leveldb_store.go:38 [info] Set a key/value: lusi {"Age":18} 
 < HTTP/1.1 200 OK
 < Content-Type: application/json
 < Date: Sun, 03 Jul 2016 15:54:27 GMT
