@@ -72,16 +72,22 @@ func NewCluster(cfg *config.Configure, conf *raft.Config) *Cluster {
 		conf.EnableSingleNode = cfg.RaftC.EnableSingleNode
 		conf.DisableBootstrapAfterElect = false
 	}
+	// get the peers
+	ps = cfg.RaftC.Peers
 
 	peerStorage.SetPeers(ps)
 
 	rCluster.PeerStorage = peerStorage
 	// Wait the transport
+	logger.Info("waitting for electing leader...")
 	r, err := raft.NewRaft(conf, rCluster.FSM, applyStore, applyStore, snap, peerStorage, tran)
+	logger.Info("has elected the leader.")
 	if err != nil {
 		logger.Fatal(err)
 	}
 	rCluster.R = r
+	peers, _ := rCluster.PeerStorage.Peers()
+	logger.Info(rCluster.Tran.LocalAddr() + " status is " + r.State().String() + " and peers is " + fmt.Sprintf("%+v", peers))
 
 	return rCluster
 }

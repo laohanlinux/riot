@@ -27,13 +27,13 @@ func NewLeveldbStorage(dir string) *LeveldbStorage {
 	}
 }
 
-// Get a value by key
+// Get implements RiotStorage interface
 func (edbs *LeveldbStorage) Get(_, key []byte) ([]byte, error) {
 	logger.Info("Get a value by ", string(key))
 	return edbs.DB.Get(key, nil)
 }
 
-// Set kv obeject
+// Set implements RiotStorage interface
 func (edbs *LeveldbStorage) Set(_, key, value []byte) error {
 	logger.Info("Set a key/value:", string(key), string(value))
 	return edbs.DB.Put(key, value, nil)

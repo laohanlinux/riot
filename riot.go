@@ -78,7 +78,6 @@ func main() {
 		}
 		logger.Info("Start rpc server successfully")
 	}()
-	fmt.Println("hello word")
 	gGroup.Add(1)
 	go func() {
 		defer gGroup.Done()

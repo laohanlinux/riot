@@ -81,7 +81,7 @@ func (bdbs *BoltdbStore) GetBucket(bucket []byte) (bolt.BucketStats, error) {
 	return bStats, nil
 }
 
-// without transaction
+// Get implements the RiotStorage interface
 func (bdbs *BoltdbStore) Get(bucket, key []byte) ([]byte, error) {
 	var value []byte
 	err := bdbs.View(func(tx *bolt.Tx) error {
@@ -105,6 +105,7 @@ func (bdbs *BoltdbStore) Get(bucket, key []byte) ([]byte, error) {
 	return value, nil
 }
 
+// Set implements the RiotStorage interface
 func (bdbs *BoltdbStore) Set(bucket, key, value []byte) error {
 	tx, err := bdbs.Begin(true)
 	if err != nil {
@@ -121,6 +122,7 @@ func (bdbs *BoltdbStore) Set(bucket, key, value []byte) error {
 	return tx.Commit()
 }
 
+// Del implements the RiotHandler interface
 func (bdbs *BoltdbStore) Del(bucket, key []byte) error {
 	tx, err := bdbs.Begin(true)
 	if err != nil {
@@ -135,14 +137,16 @@ func (bdbs *BoltdbStore) Del(bucket, key []byte) error {
 	return tx.Commit()
 }
 
-func (bdbs *BoltdbStore) Close() error {
-	return bdbs.DB.Close()
-}
-
+// Rec implements the RiotStorage interface
 func (bdbs *BoltdbStore) Rec() <-chan Iterm {
 	bdbs.l.Lock()
 	go bdbs.streamWorker()
 	return bdbs.c
+}
+
+// Close recycle the db source
+func (bdbs *BoltdbStore) Close() error {
+	return bdbs.DB.Close()
 }
 
 // get all data spends too much time ...

@@ -10,7 +10,7 @@ port = "3781"
 [raft]
 addr = "127.0.0.1"
 port = "12001"
-peers = ["127.0.0.1:12001"]
+peers = ["127.0.0.1:12001",  "127.0.0.1:12002",  "127.0.0.1:12000"]
 peer_storage = "raft1/raft_peer_storage"
 snapshot_storage = "raft1/raft_snapshot_storage"
 store_backend = "leveldb"
