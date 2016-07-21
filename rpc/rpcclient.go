@@ -29,16 +29,20 @@ func NewRiotRPCClient() *RiotRPCClient {
 }
 
 func (rc *RiotRPCClient) RPCRequest(rpcAddr string, r *pb.OpRequest) (*pb.OpReply, error) {
-	rc.l.Lock()
 	var err error
+	rc.l.Lock()
 	conn, ok := rc.conn[rpcAddr]
 	if !ok {
 		logger.Warn("New RPC Connect, rpc server addr:", rpcAddr)
+		//unlock
+		rc.l.Unlock()
 		conn, err = grpc.Dial(rpcAddr, grpc.WithInsecure())
 		if err != nil {
-			rc.l.Unlock()
 			return nil, err
 		}
+
+		// lock
+		rc.l.Lock()
 		rc.conn[rpcAddr] = conn
 	}
 	rc.l.Unlock()
