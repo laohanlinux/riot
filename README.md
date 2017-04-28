@@ -4,7 +4,6 @@
 
 Riot is a distributed key/value system basing raft algorithm, leveldb、 boltdb and bitCask(in fucture) backend store!!!
 
-
 ## Install Doc
 
 - install grpc
