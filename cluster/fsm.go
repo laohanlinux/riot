@@ -9,8 +9,6 @@ import (
 	"time"
 
 	"github.com/laohanlinux/riot/cmd"
-	"github.com/laohanlinux/riot/rpc/pb"
-	"github.com/laohanlinux/riot/share"
 	"github.com/laohanlinux/riot/store"
 
 	"github.com/boltdb/bolt"
@@ -22,7 +20,12 @@ import (
 var ErrNotFound = fmt.Errorf("the key's value is nil.")
 var ErrInvalidCmd = fmt.Errorf("the command is invalid")
 
-// var ErrInvalidBackendStore = fmt.Errorf("the store backend must be boltdb")
+type OpRequest struct {
+	Op     string
+	Key    string
+	Bucket string
+	Value  []byte
+}
 
 func NewStorageFSM(rs store.RiotStorage) *StorageFSM {
 	return &StorageFSM{
@@ -46,13 +49,15 @@ type StorageFSM struct {
 func (s *StorageFSM) Apply(log *raft.Log) interface{} {
 	s.l.Lock()
 	defer s.l.Unlock()
-	//logger.Debug("Excute StorageFSM.Apply ...")
-	var req pb.OpRequest
-	if err := json.Unmarshal(log.Data, &req); err != nil {
+
+	var (
+		req OpRequest
+		err error
+	)
+	if err = json.Unmarshal(log.Data, &req); err != nil {
 		logger.Fatal(err)
 	}
 
-	var err error
 	switch req.Op {
 	case cmd.CmdSet:
 		err = s.rs.Set([]byte(req.Bucket), []byte(req.Key), req.Value)
@@ -64,8 +69,6 @@ func (s *StorageFSM) Apply(log *raft.Log) interface{} {
 	case cmd.CmdDelBucket:
 		rs, _ := s.rs.(*store.BoltdbStore)
 		err = rs.DelBucket([]byte(req.Bucket))
-	case cmd.CmdShare:
-		err = json.Unmarshal(req.Value, share.ShCache)
 	default:
 		err = ErrInvalidCmd
 	}
@@ -94,7 +97,7 @@ func (s *StorageFSM) GetBucket(bucket []byte) (interface{}, error) {
 	s.l.Lock()
 	defer s.l.Unlock()
 	rs, _ := s.rs.(*store.BoltdbStore)
-	return rs.GetBucket([]byte(bucket))
+	return rs.GetBucket(bucket)
 }
 
 // Snapshot fsm statation
