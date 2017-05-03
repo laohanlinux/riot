@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/hashicorp/raft"
 	"github.com/laohanlinux/riot/cluster"
 	"github.com/laohanlinux/riot/cmd"
 
@@ -19,16 +20,17 @@ type API interface {
 	GetBucket(bucketName string) (info interface{}, err error)
 }
 
-type AdmAPI interface {
-	State() string
-}
-
 type miniAPI struct {
 	c *cluster.Cluster
 }
 
+func NewMiniAPI(c *cluster.Cluster) API {
+	api := miniAPI{c: c}
+	return &api
+}
+
 func (api *miniAPI) GetValue(bucketName, key string) (value []byte, err error) {
-	if value, err = api.c.Get([]byte(bucketName), []byte(key)); err != nil {
+	if value, err = api.c.Get([]byte(bucketName), []byte(key)); err != nil && err != cluster.ErrNotFound {
 		log.Error("err", err)
 	}
 	return
@@ -64,7 +66,7 @@ func (api *miniAPI) SetKV(bucketName, key string, value []byte) (err error) {
 
 func (api *miniAPI) CreateBucket(bucketName string) (err error) {
 	var (
-		req      = cluster.OpRequest{Op: cmd.CmdCreateBucket}
+		req      = cluster.OpRequest{Op: cmd.CmdCreateBucket, Bucket: bucketName}
 		b        []byte
 		raftNode = cluster.SingleCluster().R
 	)
@@ -90,17 +92,66 @@ func (api *miniAPI) DelBucket(bucketName string) (err error) {
 	return
 }
 
-func (api *miniAPI) GetBucket(bucektName string) (info interface{}, err error) {
-	if info, err = api.c.FSM.GetBucket([]byte(bucektName)); err != nil {
+func (api *miniAPI) GetBucket(bucketName string) (info interface{}, err error) {
+	if info, err = api.c.FSM.GetBucket([]byte(bucketName)); err != nil {
 		log.Error("err", err)
 	}
 	return
+}
+
+type AdmAPI interface {
+	State() string
+	Peers() (peers []string, err error)
+	Leader() (node string, err error)
+	Snapshot() (int, error)
+	RemovePeer(peer string) (err error)
 }
 
 type admAPI struct {
 	c *cluster.Cluster
 }
 
+func NewAdmAPI(c *cluster.Cluster) AdmAPI {
+	adm := &admAPI{c: c}
+	return adm
+}
+
 func (adm *admAPI) State() string {
 	return cluster.SingleCluster().Status()
+}
+
+func (adm *admAPI) Peers() (peers []string, err error) {
+	peers, err = cluster.SingleCluster().PeerStorage.Peers()
+	return
+}
+
+func (adm *admAPI) Leader() (node string, err error) {
+	node = cluster.SingleCluster().Leader()
+	if node == "" {
+		err = raft.ErrNotLeader
+	}
+	return
+}
+
+// TODO
+// only use int leader node
+func (adm *admAPI) Snapshot() (snapLen int, err error) {
+	var (
+		sna       = cluster.SingleCluster().Snap
+		snaFuture = cluster.SingleCluster().R.Snapshot()
+		snapMetas []*raft.SnapshotMeta
+	)
+
+	if err = snaFuture.Error(); err != nil {
+		return
+	}
+	if snapMetas, err = sna.List(); err != nil {
+		return
+	}
+
+	return len(snapMetas), nil
+}
+
+func (adm *admAPI) RemovePeer(peer string) (err error) {
+	return cluster.SingleCluster().R.RemovePeer(peer).Error()
 }

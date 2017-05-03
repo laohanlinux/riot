@@ -2,26 +2,33 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	_ "net/http/pprof"
 	"runtime"
-	"runtime/debug"
 	"sync"
 	"syscall"
 
+	"github.com/laohanlinux/riot/api"
 	"github.com/laohanlinux/riot/cluster"
 	"github.com/laohanlinux/riot/config"
 	"github.com/laohanlinux/riot/platform"
-	"github.com/laohanlinux/riot/rpc"
+	"github.com/laohanlinux/utils/netrpc"
 
 	"github.com/hashicorp/raft"
 	"github.com/laohanlinux/go-logger/logger"
 )
 
 func main() {
-	var cfgPath, joinAddr string
+	var (
+		cfgPath, joinAddr string
+		err               error
+		data              []byte
+		cfg               *config.Configure
+		rc                = raft.DefaultConfig()
+		c                 *cluster.Cluster
+	)
 	flag.StringVar(&cfgPath, "c", "", "configure path")
 	flag.StringVar(&joinAddr, "join", "", "host:port of leader to join")
 	flag.Parse()
@@ -29,63 +36,49 @@ func main() {
 
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	defer func() {
-		if err := recover(); err != nil {
-			debug.PrintStack()
-		}
-	}()
 	if cfgPath == "" {
-		fmt.Println("No config path")
-		return
+		panic("No config path")
 	}
 
-	data, err := ioutil.ReadFile(cfgPath)
-	if err != nil {
-		fmt.Println(err)
-		return
+	if data, err = ioutil.ReadFile(cfgPath); err != nil {
+		panic(err)
 	}
-	cfg, err := config.NewConfig(string(data))
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	// Init log confiure
-	logger.SetConsole(true)
-	err = logger.SetRollingDaily(cfg.LogC.LogDir, cfg.LogC.LogName)
-	if err != nil {
+	if cfg, err = config.NewConfig(string(data)); err != nil {
 		panic(err)
 	}
 
 	var gGroup sync.WaitGroup
-	var rpcService rpc.RiotRPCService
+
+	// Init raft server
+	// set snapshot
+	if action == "dev" {
+		rc.SnapshotThreshold = 10
+		rc.TrailingLogs = 10
+	}
+	c = cluster.NewCluster(cfg, rc)
+	// register monitor
+	if action == "dev" {
+		go func() {
+			http.ListenAndServe(cfg.SMC.Addr+":"+cfg.SMC.Port, nil)
+		}()
+	}
+
 	// Init rpc server
 	gGroup.Add(1)
 	go func() {
 		defer gGroup.Done()
-		var err error
-		rpcService, err = rpc.NewRpcServer(cfg.RpcC.Addr + ":" + cfg.RpcC.Port)
+		addr := cfg.RpcC.Addr + ":" + cfg.RpcC.Port
+		service := api.NewAPIService(api.NewMiniAPI(c), api.NewAdmAPI(c))
+		l, err := net.Listen("tcp", addr)
 		if err != nil {
 			panic(err)
 		}
+		defer l.Close()
+		srv := netrpc.NewServer()
+		srv.Register(service)
+		srv.Register(&netrpc.HealthCheck{})
 		logger.Info("Start rpc server successfully")
-	}()
-	gGroup.Add(1)
-	go func() {
-		defer gGroup.Done()
-		// Init raft server
-		rc := raft.DefaultConfig()
-		// set snapshot
-		if action == "dev" {
-			rc.SnapshotThreshold = 10
-			rc.TrailingLogs = 10
-		}
-		cluster.NewCluster(cfg, rc)
-		// register monitor
-		if action == "dev" {
-			go func() {
-				http.ListenAndServe(cfg.SMC.Addr+":"+cfg.SMC.Port, nil)
-			}()
-		}
+		srv.Accept(l)
 	}()
 
 	// regist the signal

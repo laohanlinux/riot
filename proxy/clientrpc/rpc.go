@@ -5,33 +5,149 @@ import (
 	"time"
 
 	"github.com/laohanlinux/riot/api"
+	log "github.com/laohanlinux/utils/gokitlog"
 	"github.com/laohanlinux/utils/pool/rpc"
-	"github.com/lunny/log"
-)
-
-const (
-	APIService             = "APIService"
-	APIServiceKV           = APIService + "." + "KV"
-	APIServiceSetKV        = APIService + "." + "SetKV"
-	APIServiceDel          = APIService + "." + "Del"
-	APIServiceDelKey       = APIService + "." + "DelKey"
-	APIServiceDelBucket    = APIService + "." + "DelBucket"
-	APIServiceBucketInfo   = APIService + "." + "BucketInfo"
-	APIServiceCreateBucket = APIService + "." + "CreateBucket"
-	APIServiceState        = APIService + "." + "NodeState"
 )
 
 var DefaultLeaderRPC *LeaderRPC
 var DefaultRaftRPC *rpc.NetRPCRing
 
-func InitRPC(nodeAddr []string, poolSize int) error {
+const (
+	APIService             = "APIService"
+	APIServiceKV           = APIService + "." + "KV"
+	APIServiceSetKV        = APIService + "." + "SetKV"
+	APIServiceDelKey       = APIService + "." + "DelKey"
+	APIServiceDelBucket    = APIService + "." + "DelBucket"
+	APIServiceBucketInfo   = APIService + "." + "BucketInfo"
+	APIServiceCreateBucket = APIService + "." + "CreateBucket"
+
+	APIServiceState      = APIService + "." + "NodeState"
+	APIServicePeers      = APIService + "." + "Peers"
+	APIServiceLeader     = APIService + "." + "Leader"
+	APIServiceSnapshot   = APIService + "." + "Snapshot"
+	APIServiceRemovePeer = APIServicePeers + "." + "RemovePeer"
+)
+
+func KV(bucketName, key string, qs bool) (value []byte, has bool, err error) {
+	var (
+		arg   = api.GetKVArg{BucketName: bucketName, Key: key}
+		reply api.GetKVReply
+	)
+
+	if qs {
+		err = DefaultLeaderRPC.Call(APIServiceKV, &arg, &reply)
+	} else {
+		err = DefaultRaftRPC.Call(APIServiceKV, &arg, &reply)
+	}
+	value = reply.Value
+
+	return
+}
+
+func SetKV(bucketName, key string, value []byte) (err error) {
+	var (
+		arg   = api.SetKVArg{BucketName: bucketName, Key: key, Value: value}
+		reply api.NotReply
+	)
+	err = DefaultLeaderRPC.Call(APIServiceSetKV, &arg, &reply)
+	return
+}
+
+func DelKey(bucketName, key string) (err error) {
+	var (
+		arg   = api.DelKVArg{BucketName: bucketName, Key: key}
+		reply api.NotReply
+	)
+
+	err = DefaultLeaderRPC.Call(APIServiceDelKey, &arg, &reply)
+	return
+}
+
+func DelBucket(bucketName string) (err error) {
+	var (
+		arg   = api.DelKVArg{BucketName: bucketName}
+		reply api.NotReply
+	)
+	err = DefaultLeaderRPC.Call(APIServiceDelBucket, &arg, &reply)
+	return
+}
+
+func BucketInfo(bucketName string) (info interface{}, has bool, err error) {
+	var (
+		arg   = api.BucketInfoArg{BucketName: bucketName}
+		reply api.BucketInfoReply
+	)
+	if err = DefaultLeaderRPC.Call(APIServiceBucketInfo, &arg, &reply); err != nil {
+		return
+	}
+
+	info = reply.Info
+	has = reply.Has
+	return
+}
+
+func CreateBucket(bucketName string) (err error) {
+	var (
+		arg   = api.CreateBucketArg{BucketName: bucketName}
+		reply api.NotReply
+	)
+
+	err = DefaultLeaderRPC.Call(APIServiceCreateBucket, &arg, &reply)
+	return
+}
+
+func Peers() (peers []string, err error) {
+	var (
+		arg   api.NotArg
+		reply api.PeersReply
+	)
+
+	if err = DefaultRaftRPC.Call(APIServicePeers, &arg, &reply); err != nil {
+		return
+	}
+	return reply.Peers, nil
+}
+
+func Leader() (addr string, err error) {
+	var (
+		arg   api.NotArg
+		reply api.LeaderReply
+	)
+	if err = DefaultRaftRPC.Call(APIServiceLeader, &arg, &reply); err != nil {
+		return
+	}
+	return reply.Leader, nil
+}
+
+func Snapshot() (snaLen int, err error) {
+	var (
+		arg   api.NotArg
+		reply api.SnapshotReply
+	)
+	if err = DefaultRaftRPC.Call(APIServiceSnapshot, &arg, &reply); err != nil {
+		return
+	}
+	return reply.Len, nil
+}
+
+func RemovePeer(peer string) (err error) {
+	var (
+		arg   api.RemovePeerArg
+		reply api.NotReply
+	)
+	err = DefaultLeaderRPC.Call(APIServiceRemovePeer, &arg, &reply)
+	return
+}
+
+func InitRPC(nodeAddrs []string, poolSize int) error {
 	var err error
-	if err = initRPC(nodeAddr, poolSize); err != nil {
+	if err = initRPC(nodeAddrs, poolSize); err != nil {
 		return err
 	}
-	if err = initLeaderRPC(nodeAdds, poolSize); err != nil {
+	if err = initLeaderRPC(nodeAddrs, poolSize); err != nil {
 		return err
 	}
+	return nil
 }
 
 func initRPC(nodeAddr []string, poolSize int) error {
@@ -64,7 +180,7 @@ func NewLeaderRPC(nodeAdds []string, addr string, poolSize int) (leaderRPC *Lead
 		leaderRPC.nodes = nodeAdds
 		leaderRPC.quit = make(chan struct{})
 		leaderRPC.NetRPCRing, err = rpc.NewNetRPCRing([]rpc.NetRPCRingOpt{opt})
-		leaderRPC.opts = opt
+		leaderRPC.opt = opt
 	}
 	if err != nil {
 		return
@@ -77,7 +193,7 @@ type LeaderRPC struct {
 	nodes []string
 	*rpc.NetRPCRing
 	quit chan struct{}
-	opts rpc.NetRPCRingOpt
+	opt  rpc.NetRPCRingOpt
 }
 
 func (l *LeaderRPC) start() {
@@ -88,7 +204,9 @@ func (l *LeaderRPC) start() {
 		reply     api.NodeStateReply
 		err       error
 		g         sync.WaitGroup
+		nodes     = l.nodes
 	)
+	log.Warn("nodes", nodes)
 	defer ticker.Stop()
 
 	for {
@@ -99,16 +217,20 @@ func (l *LeaderRPC) start() {
 				ticker = time.NewTicker(time.Second * 3)
 			}
 			// check current node
-			err = l.NetRPCRing.Call(APIServiceState, &args, &reply)
+			err = l.NetRPCRing.Call(APIServiceState, &arg, &reply)
 			if err == nil {
-				return
+				if reply.State == "Leader" {
+					return
+				}
+				log.Warnf("leader change, old leader:%v, current node state:%v", l.opt.Addr, reply.State)
 			}
 
-			for _, addr := range l.nodes {
+			for _, addr := range nodes {
 				g.Add(1)
-				go func() {
+				go func(addr string) {
 					defer g.Done()
 					var (
+						opt    = rpc.NetRPCRingOpt{NetWork: "tcp", Addr: addr, PoolSize: l.opt.PoolSize}
 						c, err = rpc.NewNetRPCRing([]rpc.NetRPCRingOpt{opt})
 						arg    api.NotArg
 						reply  api.NodeStateReply
@@ -117,13 +239,20 @@ func (l *LeaderRPC) start() {
 						log.Error("err", err)
 						return
 					}
-					err = l.NetRPCRing.Call(APIServiceState, &args, &reply)
-					if err == nil {
+					err = c.Call(APIServiceState, &arg, &reply)
+					if err != nil {
 						log.Error("err", err)
+						c.Close()
 						return
 					}
-					l.NetRPCRing = c
-				}()
+					if reply.State == "Leader" {
+						l.NetRPCRing = c
+						log.Warn("new leader", addr)
+					} else {
+						c.Close()
+						log.Warnf("the node(%v) is %v", addr, reply.State)
+					}
+				}(addr)
 			}
 			g.Wait()
 		case <-l.quit:
@@ -134,4 +263,5 @@ func (l *LeaderRPC) start() {
 
 func (l *LeaderRPC) Close() {
 	close(l.quit)
+	l.NetRPCRing.Close()
 }
