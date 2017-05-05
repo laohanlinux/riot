@@ -93,9 +93,7 @@ func (api *miniAPI) DelBucket(bucketName string) (err error) {
 }
 
 func (api *miniAPI) GetBucket(bucketName string) (info interface{}, err error) {
-	if info, err = api.c.FSM.GetBucket([]byte(bucketName)); err != nil {
-		log.Error("err", err)
-	}
+	info, err = api.c.FSM.GetBucket([]byte(bucketName))
 	return
 }
 

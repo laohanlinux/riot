@@ -9,7 +9,7 @@ import (
 	"github.com/laohanlinux/riot/api"
 )
 
-func TestClientRPC(t *testing.T) {
+func TestClientRPCKV(t *testing.T) {
 	var (
 		addrs      = []string{"127.0.0.1:32124", "127.0.0.1:32125", "127.0.0.1:32123"}
 		arg        api.NotArg
@@ -64,9 +64,26 @@ func TestClientRPC(t *testing.T) {
 			reply api.BucketInfoReply
 		)
 		assert.Nil(t, DefaultLeaderRPC.Call(APIServiceBucketInfo, &arg, &reply))
-		fmt.Println(reply.Info)
+		assert.Equal(t, true, reply.Has)
 	}
 
+	{
+		var (
+			arg   = api.DelBucketArg{BucketName: bucketName}
+			reply api.NotReply
+		)
+		assert.Nil(t, DefaultLeaderRPC.Call(APIServiceDelBucket, &arg, &reply))
+	}
+
+	{
+		var (
+			arg   = api.BucketInfoArg{BucketName: bucketName}
+			reply api.BucketInfoReply
+		)
+		assert.Nil(t, DefaultLeaderRPC.Call(APIServiceBucketInfo, &arg, &reply))
+		assert.Equal(t, false, reply.Has)
+	}
+	////////////////////////////////////////////////
 	// set value
 	{
 		var (
@@ -84,5 +101,24 @@ func TestClientRPC(t *testing.T) {
 		)
 		assert.Nil(t, DefaultLeaderRPC.Call(APIServiceKV, &arg, &reply))
 		fmt.Println(reply.Has)
+	}
+	// del value
+	{
+		{
+			var (
+				arg   = api.DelKVArg{BucketName: bucketName, Key: key}
+				reply api.NotReply
+			)
+			assert.Nil(t, DefaultLeaderRPC.Call(APIServiceDelKey, &arg, &reply))
+		}
+
+		{
+			var (
+				arg   = api.GetKVArg{BucketName: bucketName, Key: key}
+				reply api.GetKVReply
+			)
+			assert.Nil(t, DefaultRaftRPC.Call(APIServiceKV, &arg, &reply))
+			assert.Equal(t, false, reply.Has)
+		}
 	}
 }

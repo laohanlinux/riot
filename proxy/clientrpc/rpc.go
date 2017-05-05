@@ -206,7 +206,7 @@ func (l *LeaderRPC) start() {
 		g         sync.WaitGroup
 		nodes     = l.nodes
 	)
-	log.Warn("nodes", nodes)
+	log.Debug("nodes", nodes)
 	defer ticker.Stop()
 
 	for {

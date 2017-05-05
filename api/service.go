@@ -17,6 +17,10 @@ type SetKVArg struct {
 	Value      []byte
 }
 
+type SetKVReply struct {
+	HasBucket bool
+}
+
 type GetKVArg struct {
 	BucketName string
 	Key        string
@@ -87,19 +91,23 @@ func (s *APIService) KV(_ context.Context, arg *GetKVArg, reply *GetKVReply) (er
 	reply.Value, err = s.api.GetValue(arg.BucketName, arg.Key)
 	if err == cluster.ErrNotFound {
 		err = nil
+	} else {
+		reply.Has = true
 	}
-	reply.Has = true
 	return
 }
-func (s *APIService) SetKV(_ context.Context, arg *SetKVArg, _ *NotReply) (err error) {
+func (s *APIService) SetKV(_ context.Context, arg *SetKVArg, reply *SetKVReply) (err error) {
 	err = s.api.SetKV(arg.BucketName, arg.Key, arg.Value)
+	if err == cluster.ErrNotFound {
+		err = nil
+		reply.HasBucket = false
+	}
 	return
 }
 
 func (s *APIService) BucketInfo(_ context.Context, arg *BucketInfoArg, reply *BucketInfoReply) (err error) {
 	var info interface{}
-	info, err = s.api.GetBucket(arg.BucketName)
-	if err == bolt.ErrBucketNotFound {
+	if info, err = s.api.GetBucket(arg.BucketName); err == cluster.ErrNotFound {
 		err = nil
 		return
 	}
@@ -109,12 +117,16 @@ func (s *APIService) BucketInfo(_ context.Context, arg *BucketInfoArg, reply *Bu
 }
 
 func (s *APIService) DelKey(_ context.Context, arg *DelKVArg, _ *NotReply) (err error) {
-	err = s.api.DelKey(arg.BucketName, arg.Key)
+	if err = s.api.DelKey(arg.BucketName, arg.Key); err == cluster.ErrNotFound {
+		err = nil
+	}
 	return
 }
 
 func (s *APIService) DelBucket(_ context.Context, arg *DelBucketArg, _ *NotReply) (err error) {
-	err = s.api.DelBucket(arg.BucketName)
+	if err = s.api.DelBucket(arg.BucketName); err == cluster.ErrNotFound {
+		err = nil
+	}
 	return
 }
 

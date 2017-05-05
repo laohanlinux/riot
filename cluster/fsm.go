@@ -72,7 +72,13 @@ func (s *StorageFSM) Apply(log *raft.Log) interface{} {
 	default:
 		err = ErrInvalidCmd
 	}
-	if err != nil {
+	if err == bolt.ErrBucketNotFound {
+		err = ErrNotFound
+	}
+	if err == bolt.ErrBucketExists {
+		err = nil
+	}
+	if err != nil && err != ErrNotFound {
 		logger.Error(err.Error())
 	}
 	return err
@@ -83,7 +89,7 @@ func (s *StorageFSM) Get(bucket, key []byte) ([]byte, error) {
 	s.l.Lock()
 	defer s.l.Unlock()
 	value, err := s.rs.Get(bucket, key)
-	if err == errors.ErrNotFound {
+	if err == bolt.ErrBucketNotFound || err == errors.ErrNotFound {
 		return nil, ErrNotFound
 	}
 	if err != nil {
@@ -93,11 +99,15 @@ func (s *StorageFSM) Get(bucket, key []byte) ([]byte, error) {
 }
 
 // GetBucket return the bucket detail info
-func (s *StorageFSM) GetBucket(bucket []byte) (interface{}, error) {
+func (s *StorageFSM) GetBucket(bucket []byte) (info interface{}, err error) {
 	s.l.Lock()
 	defer s.l.Unlock()
 	rs, _ := s.rs.(*store.BoltdbStore)
-	return rs.GetBucket(bucket)
+	info, err = rs.GetBucket(bucket)
+	if err == bolt.ErrBucketNotFound {
+		err = ErrNotFound
+	}
+	return
 }
 
 // Snapshot fsm statation

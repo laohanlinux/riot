@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/boltdb/bolt"
+	log "github.com/laohanlinux/utils/gokitlog"
 	"github.com/syndtr/goleveldb/leveldb/errors"
 )
 
@@ -28,17 +29,20 @@ func NewBoltdbStore(dir string) *BoltdbStore {
 }
 
 func (bdbs *BoltdbStore) CreateBucket(bucket []byte) error {
-	tx, err := bdbs.Begin(true)
-	if err != nil {
+	var (
+		tx  *bolt.Tx
+		err error
+	)
+	if tx, err = bdbs.Begin(true); err != nil {
 		return err
 	}
 	defer tx.Rollback()
-	_, err = tx.CreateBucketIfNotExists(bucket)
-	if err != nil {
+	if _, err = tx.CreateBucketIfNotExists(bucket); err != nil {
 		return err
 	}
 
 	bdbs.l.Lock()
+
 	if _, ok := bdbs.buckets[string(bucket)]; !ok {
 		bdbs.buckets[string(bucket)] = true
 	}
@@ -47,9 +51,12 @@ func (bdbs *BoltdbStore) CreateBucket(bucket []byte) error {
 	return tx.Commit()
 }
 
-func (bdbs *BoltdbStore) DelBucket(bucket []byte) error {
-	tx, err := bdbs.Begin(true)
-	if err != nil {
+func (bdbs *BoltdbStore) DelBucket(bucket []byte) (err error) {
+	var (
+		tx *bolt.Tx
+		ok bool
+	)
+	if tx, err = bdbs.Begin(true); err != nil {
 		return err
 	}
 	defer tx.Rollback()
@@ -58,7 +65,7 @@ func (bdbs *BoltdbStore) DelBucket(bucket []byte) error {
 	}
 
 	bdbs.l.Lock()
-	if _, ok := bdbs.buckets[string(bucket)]; ok {
+	if _, ok = bdbs.buckets[string(bucket)]; ok {
 		delete(bdbs.buckets, string(bucket))
 	}
 	bdbs.l.Unlock()
@@ -66,31 +73,34 @@ func (bdbs *BoltdbStore) DelBucket(bucket []byte) error {
 	return tx.Commit()
 }
 
-func (bdbs *BoltdbStore) GetBucket(bucket []byte) (bolt.BucketStats, error) {
-	var bStats bolt.BucketStats
-	tx, err := bdbs.Begin(true)
-	if err != nil {
+func (bdbs *BoltdbStore) GetBucket(bucket []byte) (bStats bolt.BucketStats, err error) {
+	var (
+		tx *bolt.Tx
+		bt *bolt.Bucket
+	)
+	if tx, err = bdbs.Begin(true); err != nil {
 		return bStats, err
 	}
 	defer tx.Rollback()
-	bt := tx.Bucket(bucket)
-	if bt == nil {
+	if bt = tx.Bucket(bucket); bt == nil {
 		return bStats, bolt.ErrBucketNotFound
 	}
 	bStats = bt.Stats()
-	return bStats, nil
+	return
 }
 
 // Get implements the RiotStorage interface
-func (bdbs *BoltdbStore) Get(bucket, key []byte) ([]byte, error) {
-	var value []byte
-	err := bdbs.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket(bucket)
-		if b == nil {
+func (bdbs *BoltdbStore) Get(bucket, key []byte) (value []byte, err error) {
+
+	err = bdbs.View(func(tx *bolt.Tx) error {
+		var (
+			bt *bolt.Bucket
+			v  []byte
+		)
+		if bt = tx.Bucket(bucket); bt == nil {
 			return bolt.ErrBucketNotFound
 		}
-		v := b.Get(key)
-		if v != nil {
+		if v = bt.Get(key); v != nil {
 			value = make([]byte, len(v))
 			copy(value, v)
 		}
@@ -107,16 +117,19 @@ func (bdbs *BoltdbStore) Get(bucket, key []byte) ([]byte, error) {
 
 // Set implements the RiotStorage interface
 func (bdbs *BoltdbStore) Set(bucket, key, value []byte) error {
-	tx, err := bdbs.Begin(true)
-	if err != nil {
+	var (
+		tx  *bolt.Tx
+		bt  *bolt.Bucket
+		err error
+	)
+	if tx, err = bdbs.Begin(true); err != nil {
 		return err
 	}
 	defer tx.Rollback()
-	bt := tx.Bucket(bucket)
-	if bt == nil {
+	if bt = tx.Bucket(bucket); bt == nil {
 		return bolt.ErrBucketNotFound
 	}
-	if err := bt.Put(key, value); err != nil {
+	if err = bt.Put(key, value); err != nil {
 		return err
 	}
 	return tx.Commit()
@@ -124,14 +137,21 @@ func (bdbs *BoltdbStore) Set(bucket, key, value []byte) error {
 
 // Del implements the RiotHandler interface
 func (bdbs *BoltdbStore) Del(bucket, key []byte) error {
-	tx, err := bdbs.Begin(true)
-	if err != nil {
+	var (
+		tx  *bolt.Tx
+		bt  *bolt.Bucket
+		err error
+	)
+	if tx, err = bdbs.Begin(true); err != nil {
 		return nil
 	}
 	defer tx.Rollback()
 
-	bt := tx.Bucket(bucket)
-	if err := bt.Delete(key); err != nil {
+	if bt = tx.Bucket(bucket); bt == nil {
+		return bolt.ErrBucketNotFound
+	}
+
+	if err = bt.Delete(key); err != nil {
 		return err
 	}
 	return tx.Commit()
@@ -156,8 +176,15 @@ func (bdbs *BoltdbStore) streamWorker() {
 	bdbs.View(func(tx *bolt.Tx) error {
 		// scan all bucket
 		for bucketName, _ := range bdbs.buckets {
-			bucket := tx.Bucket([]byte(bucketName))
-			c := bucket.Cursor()
+			var (
+				bt *bolt.Bucket
+				c  *bolt.Cursor
+			)
+			if bt = tx.Bucket([]byte(bucketName)); bt == nil {
+				log.Error("bucket", nil)
+				continue
+			}
+			c = bt.Cursor()
 			iterm.Err = nil
 			for k, v := c.First(); k != nil; k, v = c.Next() {
 				iterm.Bucket, iterm.Key, iterm.Value = []byte(bucketName), k, v
