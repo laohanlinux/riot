@@ -100,6 +100,7 @@ func TestClientRPCKV(t *testing.T) {
 			reply api.GetKVReply
 		)
 		assert.Nil(t, DefaultLeaderRPC.Call(APIServiceKV, &arg, &reply))
+		assert.Equal(t, true, reply.Has)
 		fmt.Println(reply.Has)
 	}
 	// del value

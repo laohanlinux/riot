@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/boltdb/bolt"
+	"github.com/hashicorp/raft"
 	"github.com/laohanlinux/riot/cluster"
 )
 
@@ -60,6 +61,10 @@ type NodeStateReply struct {
 	State string
 }
 
+type NodeString struct {
+	NodeInfo string
+}
+
 type PeersReply struct {
 	Peers []string
 }
@@ -74,6 +79,10 @@ type SnapshotReply struct {
 
 type RemovePeerArg struct {
 	Peer string
+}
+
+type RemovePeerReply struct {
+	Has bool
 }
 
 //////////
@@ -140,6 +149,11 @@ func (s *APIService) NodeState(_ context.Context, _ *NotArg, reply *NodeStateRep
 	return
 }
 
+func (s *APIService) NodeString(_ context.Context, _ *NotArg, reply *NodeString) (err error) {
+	reply.NodeInfo = s.adm.NodeString()
+	return
+}
+
 func (s *APIService) Peers(_ context.Context, _ *NotArg, reply *PeersReply) (err error) {
 	reply.Peers, err = s.adm.Peers()
 	return
@@ -155,7 +169,11 @@ func (s *APIService) Snapshot(_ context.Context, _ *NotArg, reply *SnapshotReply
 	return
 }
 
-func (s *APIService) RemovePeer(_ context.Context, arg *RemovePeerArg, _ *NotReply) (err error) {
-	err = s.adm.RemovePeer(arg.Peer)
+func (s *APIService) RemovePeer(_ context.Context, arg *RemovePeerArg, reply *RemovePeerReply) (err error) {
+	if err = s.adm.RemovePeer(arg.Peer); err == raft.ErrUnknownPeer {
+		err = nil
+	} else {
+		reply.Has = true
+	}
 	return
 }

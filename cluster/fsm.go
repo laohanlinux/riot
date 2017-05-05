@@ -13,7 +13,7 @@ import (
 
 	"github.com/boltdb/bolt"
 	"github.com/hashicorp/raft"
-	"github.com/laohanlinux/go-logger/logger"
+	log "github.com/laohanlinux/utils/gokitlog"
 	"github.com/syndtr/goleveldb/leveldb/errors"
 )
 
@@ -46,7 +46,7 @@ type StorageFSM struct {
 // {"cmd":op, "key":key, "value": value}
 // TODO
 // use protocol buffer instead of json format
-func (s *StorageFSM) Apply(log *raft.Log) interface{} {
+func (s *StorageFSM) Apply(logEntry *raft.Log) interface{} {
 	s.l.Lock()
 	defer s.l.Unlock()
 
@@ -54,8 +54,8 @@ func (s *StorageFSM) Apply(log *raft.Log) interface{} {
 		req OpRequest
 		err error
 	)
-	if err = json.Unmarshal(log.Data, &req); err != nil {
-		logger.Fatal(err)
+	if err = json.Unmarshal(logEntry.Data, &req); err != nil {
+		log.Crit("err", err)
 	}
 
 	switch req.Op {
@@ -79,7 +79,7 @@ func (s *StorageFSM) Apply(log *raft.Log) interface{} {
 		err = nil
 	}
 	if err != nil && err != ErrNotFound {
-		logger.Error(err.Error())
+		log.Error(err.Error())
 	}
 	return err
 }
@@ -88,7 +88,12 @@ func (s *StorageFSM) Apply(log *raft.Log) interface{} {
 func (s *StorageFSM) Get(bucket, key []byte) ([]byte, error) {
 	s.l.Lock()
 	defer s.l.Unlock()
-	value, err := s.rs.Get(bucket, key)
+
+	var (
+		value []byte
+		err   error
+	)
+	value, err = s.rs.Get(bucket, key)
 	if err == bolt.ErrBucketNotFound || err == errors.ErrNotFound {
 		return nil, ErrNotFound
 	}
@@ -102,7 +107,8 @@ func (s *StorageFSM) Get(bucket, key []byte) ([]byte, error) {
 func (s *StorageFSM) GetBucket(bucket []byte) (info interface{}, err error) {
 	s.l.Lock()
 	defer s.l.Unlock()
-	rs, _ := s.rs.(*store.BoltdbStore)
+	var rs *store.BoltdbStore
+	rs, _ = s.rs.(*store.BoltdbStore)
 	info, err = rs.GetBucket(bucket)
 	if err == bolt.ErrBucketNotFound {
 		err = ErrNotFound
@@ -114,7 +120,7 @@ func (s *StorageFSM) GetBucket(bucket []byte) (info interface{}, err error) {
 func (s *StorageFSM) Snapshot() (raft.FSMSnapshot, error) {
 	s.l.Lock()
 	defer s.l.Unlock()
-	logger.Info("Excute StorageFSM.Snapshot ...")
+	log.Info("Excute StorageFSM.Snapshot ...")
 	return &StorageSnapshot{
 		diskStore: s.rs,
 	}, nil
@@ -126,21 +132,24 @@ func (s *StorageFSM) Restore(inp io.ReadCloser) error {
 	s.l.Lock()
 	defer s.l.Unlock()
 	defer inp.Close()
-
-	bSizeBuf := make([]byte, 2)
-	iterm := store.Iterm{}
+	var (
+		bSizeBuf = make([]byte, 2)
+		iterm    store.Iterm
+		bSize    int
+		buf      []byte
+		rs       *store.BoltdbStore
+		err      error
+	)
 	for {
-		_, err := inp.Read(bSizeBuf)
-		if err == io.EOF {
+		if _, err = inp.Read(bSizeBuf); err == io.EOF {
 			break
 		}
 		if err != nil {
 			panic(err)
 		}
-		bSize := int(binary.LittleEndian.Uint16(bSizeBuf))
-		buf := make([]byte, bSize)
-		_, err = inp.Read(buf)
-		if err == io.EOF {
+		bSize = int(binary.LittleEndian.Uint16(bSizeBuf))
+		buf = make([]byte, bSize)
+		if _, err = inp.Read(buf); err == io.EOF {
 			break
 		}
 		if err != nil {
@@ -157,7 +166,7 @@ func (s *StorageFSM) Restore(inp io.ReadCloser) error {
 		// the backend store is boltdb store and the bucket not exists
 		if err == bolt.ErrBucketNotFound {
 			// create new bucket
-			rs, _ := s.rs.(*store.BoltdbStore)
+			rs, _ = s.rs.(*store.BoltdbStore)
 			if err = rs.CreateBucket(iterm.Bucket); err != nil {
 				panic(err)
 			}
@@ -175,19 +184,23 @@ type StorageSnapshot struct {
 // Persist data into disk.
 // Notice: every record size can not lager than 131072 byte. mybe that is not good design.
 func (s *StorageSnapshot) Persist(sink raft.SnapshotSink) error {
-	logger.Info("Excute StorageSnapshot.Persist ... ")
+	log.Info("Excute StorageSnapshot.Persist ... ")
 	defer sink.Close()
-	c := s.diskStore.Rec()
-
+	var (
+		c     = s.diskStore.Rec()
+		data  []byte
+		buf   []byte
+		bSize uint16
+		err   error
+	)
 	for {
 		iterm := <-c
 		if iterm.Err == nil {
-			data, err := json.Marshal(iterm)
-			if err != nil {
+			if data, err = json.Marshal(iterm); err != nil {
 				return err
 			}
-			bSize := uint16(len(data))
-			buf := make([]byte, bSize+2)
+			bSize = uint16(len(data))
+			buf = make([]byte, bSize+2)
 			binary.LittleEndian.PutUint16(buf[:2], bSize)
 			copy(buf[2:], data)
 			if _, err = sink.Write(buf); err != nil {
@@ -202,7 +215,7 @@ func (s *StorageSnapshot) Persist(sink raft.SnapshotSink) error {
 
 // Release snapshot
 func (s *StorageSnapshot) Release() {
-	logger.Info("Excute StorageSnapshot.Release ...")
+	log.Info("Excute StorageSnapshot.Release ...")
 }
 
 //InmemConfig .

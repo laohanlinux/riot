@@ -3,7 +3,7 @@ package store
 import (
 	"sync"
 
-	"github.com/laohanlinux/go-logger/logger"
+	log "github.com/laohanlinux/utils/gokitlog"
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
@@ -29,13 +29,13 @@ func NewLeveldbStorage(dir string) *LeveldbStorage {
 
 // Get implements RiotStorage interface
 func (edbs *LeveldbStorage) Get(_, key []byte) ([]byte, error) {
-	logger.Info("Get a value by ", string(key))
+	log.Infof("Get a value by ", string(key))
 	return edbs.DB.Get(key, nil)
 }
 
 // Set implements RiotStorage interface
 func (edbs *LeveldbStorage) Set(_, key, value []byte) error {
-	logger.Info("Set a key/value:", string(key), string(value))
+	log.Infof("Set a key/value:", string(key), string(value))
 	return edbs.DB.Put(key, value, nil)
 }
 
@@ -69,7 +69,7 @@ func (edbs *LeveldbStorage) streamWorker() {
 		iterm.Value = make([]byte, len(iter.Value()))
 		copy(iterm.Key, iter.Key())
 		copy(iterm.Value, iter.Value())
-		logger.Debug(string(iterm.Key), string(iterm.Value))
+		log.Debugf(string(iterm.Key), string(iterm.Value))
 		edbs.c <- iterm
 	}
 	iterm.Key, iterm.Value = nil, nil

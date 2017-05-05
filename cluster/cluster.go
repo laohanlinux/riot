@@ -11,7 +11,7 @@ import (
 
 	"github.com/hashicorp/raft"
 	"github.com/hashicorp/raft-boltdb"
-	"github.com/laohanlinux/go-logger/logger"
+	log "github.com/laohanlinux/utils/gokitlog"
 )
 
 type Cluster struct {
@@ -44,7 +44,7 @@ func NewCluster(cfg *config.Configure, conf *raft.Config) *Cluster {
 	applyStore := initRaftLog(cfg, conf)
 	// create a key/value store
 	if err := os.RemoveAll(cfg.RaftC.StoreBackendPath); err != nil {
-		logger.Fatal(err)
+		log.Crit("err", err)
 	}
 	edbs := store.NewRiotStoreFactory(cfg.RaftC.StoreBackend, cfg.RaftC.StoreBackendPath)
 	rCluster.FSM = NewStorageFSM(edbs)
@@ -52,7 +52,7 @@ func NewCluster(cfg *config.Configure, conf *raft.Config) *Cluster {
 	//create snap dir
 	snap, err := raft.NewFileSnapshotStore(cfg.RaftC.SnapshotStorage, 3, nil)
 	if err != nil {
-		logger.Fatal(err)
+		log.Crit("err", err)
 	}
 	rCluster.Snap = snap
 
@@ -60,7 +60,7 @@ func NewCluster(cfg *config.Configure, conf *raft.Config) *Cluster {
 	tranAddr := fmt.Sprintf("%s:%s", cfg.RaftC.Addr, cfg.RaftC.Port)
 	tran, err := raft.NewTCPTransport(tranAddr, nil, 3, 2*time.Second, nil)
 	if err != nil {
-		logger.Fatal(err)
+		log.Crit("err", err)
 	}
 	rCluster.Tran = tran
 
@@ -79,15 +79,15 @@ func NewCluster(cfg *config.Configure, conf *raft.Config) *Cluster {
 
 	rCluster.PeerStorage = peerStorage
 	// Wait the transport
-	logger.Info("waitting for electing leader...")
+	log.Debug("waitting for electing leader...")
 	r, err := raft.NewRaft(conf, rCluster.FSM, applyStore, applyStore, snap, peerStorage, tran)
-	logger.Info("has elected the leader.")
+	log.Debug("has elected the leader.")
 	if err != nil {
-		logger.Fatal(err)
+		log.Crit(err)
 	}
 	rCluster.R = r
 	peers, _ := rCluster.PeerStorage.Peers()
-	logger.Info(rCluster.Tran.LocalAddr() + " status is " + r.State().String() + " and peers is " + fmt.Sprintf("%+v", peers))
+	log.Info("addr", rCluster.Tran.LocalAddr(), "status", r.State().String(), "peers", fmt.Sprintf("%+v", peers))
 
 	return rCluster
 }
@@ -95,6 +95,10 @@ func NewCluster(cfg *config.Configure, conf *raft.Config) *Cluster {
 // Status of the node running info
 func (c *Cluster) Status() string {
 	return c.R.State().String()
+}
+
+func (c *Cluster) LocalString() string {
+	return c.R.String()
 }
 
 func (c *Cluster) Leader() string {

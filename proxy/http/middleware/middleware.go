@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/laohanlinux/riot/proxy/http/errcode"
@@ -28,6 +29,18 @@ func ContextMiddleware(ctx *macaron.Context) {
 	ctx.Next()
 }
 
+func AuthorMiddleware(token string, ctx *macaron.Context) {
+	var (
+		res = ctx.Data[ResKey].(map[string]interface{})
+	)
+	if token != "" && token != strings.ToLower(ctx.Req.Header.Get("x-token")) {
+		res["ret"] = errcode.ErrCodeForbidden
+		OutputMiddleware(ctx)
+		return
+	}
+	ctx.Next()
+}
+
 func OutputMiddleware(ctx *macaron.Context) {
 	var (
 		res, ok = ctx.Data[ResKey].(map[string]interface{})
@@ -48,7 +61,7 @@ func OutputMiddleware(ctx *macaron.Context) {
 		ctx.Resp.WriteHeader(http.StatusOK)
 	case errcode.ErrCodeInternal:
 		ctx.Resp.WriteHeader(http.StatusInternalServerError)
-	case errcode.ErrCodeInvalidRequest:
+	case errcode.ErrCodeInvalidRequest, errcode.ErrCodeForbidden:
 		ctx.Resp.WriteHeader(http.StatusForbidden)
 	case errcode.ErrCodeNotFound:
 		ctx.Resp.WriteHeader(http.StatusNotFound)

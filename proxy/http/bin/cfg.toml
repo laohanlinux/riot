@@ -3,6 +3,7 @@ rpc-addrs = ["127.0.0.1:32123", "127.0.0.1:32124", "127.0.0.1:32125"]
 pool-size = 10
 [server]
 rpc-addr = "127.0.0.1:8080"
+token = ""
 [log]
 dir = "/tmp"
 name = "riot-proxy"

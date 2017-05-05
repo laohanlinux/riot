@@ -13,6 +13,7 @@ type Config struct {
 
 type Server struct {
 	RPCAddr string `toml:"rpc-addr"`
+	Token   string `toml:"token"`
 }
 
 type RiotConfig struct {

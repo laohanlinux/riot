@@ -4,5 +4,6 @@ const (
 	Ok = iota
 	ErrCodeInternal
 	ErrCodeInvalidRequest
+	ErrCodeForbidden
 	ErrCodeNotFound
 )

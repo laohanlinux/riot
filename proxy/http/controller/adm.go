@@ -31,6 +31,20 @@ func Leader(ctx *macaron.Context) {
 	res["data"] = leader
 }
 
+func States(ctx *macaron.Context) {
+	var (
+		res, _ = ctx.Data[middleware.ResKey].(map[string]interface{})
+		states []string
+		err    error
+	)
+	if states, err = clientrpc.States(); err != nil {
+		log.Error("err", err)
+		res["ret"] = errcode.ErrCodeInternal
+		return
+	}
+	res["data"] = states
+}
+
 func Peers(ctx *macaron.Context) {
 	var (
 		res, _ = ctx.Data[middleware.ResKey].(map[string]interface{})

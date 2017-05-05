@@ -5,10 +5,10 @@ package platform
 import (
 	"os"
 
-	"github.com/laohanlinux/go-logger/logger"
+	log "github.com/laohanlinux/utils/gokitlog"
 )
 
 // RegistSignal for listening signals
 func RegistSignal(sig ...os.Signal) {
-	logger.Warn("the os platform is windows, can not handler the RegistSignal function.")
+	log.Warn("the os platform is windows, can not handler the RegistSignal function.")
 }

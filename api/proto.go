@@ -50,6 +50,7 @@ func (api *miniAPI) DelKey(bucektName, key string) (err error) {
 	return
 }
 
+// SetKV must be invoke by leader node
 func (api *miniAPI) SetKV(bucketName, key string, value []byte) (err error) {
 	var (
 		req      = cluster.OpRequest{Op: cmd.CmdSet, Bucket: bucketName, Key: key, Value: value}
@@ -64,6 +65,7 @@ func (api *miniAPI) SetKV(bucketName, key string, value []byte) (err error) {
 	return
 }
 
+// CreateBucket must be invoke by leader node
 func (api *miniAPI) CreateBucket(bucketName string) (err error) {
 	var (
 		req      = cluster.OpRequest{Op: cmd.CmdCreateBucket, Bucket: bucketName}
@@ -99,6 +101,7 @@ func (api *miniAPI) GetBucket(bucketName string) (info interface{}, err error) {
 
 type AdmAPI interface {
 	State() string
+	NodeString() string
 	Peers() (peers []string, err error)
 	Leader() (node string, err error)
 	Snapshot() (int, error)
@@ -116,6 +119,10 @@ func NewAdmAPI(c *cluster.Cluster) AdmAPI {
 
 func (adm *admAPI) State() string {
 	return cluster.SingleCluster().Status()
+}
+
+func (adm *admAPI) NodeString() string {
+	return cluster.SingleCluster().LocalString()
 }
 
 func (adm *admAPI) Peers() (peers []string, err error) {

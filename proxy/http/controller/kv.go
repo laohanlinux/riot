@@ -19,14 +19,14 @@ func GetValue(ctx *macaron.Context) {
 		key     = ctx.Params("key")
 		bucket  = ctx.Params("bucket")
 		qsValue = ctx.Req.URL.Query().Get("qs")
-		qs      bool
+		qs      int
 		res, _  = ctx.Data[middleware.ResKey].(map[string]interface{})
 		value   []byte
 		has     bool
 		err     error
 	)
 	if qsValue != "" {
-		if qs, err = strconv.ParseBool(qsValue); err != nil {
+		if qs, err = strconv.Atoi(qsValue); err != nil || (qs != 0 && qs != 1) {
 			log.Error("err", err)
 			res["ret"] = errcode.ErrCodeInvalidRequest
 			return

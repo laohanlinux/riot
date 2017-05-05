@@ -7,6 +7,10 @@ import (
 )
 
 func Contr404(ctx *macaron.Context) {
+	if ctx.Resp.Written() {
+		return
+	}
+
 	ctx.WriteHeader(http.StatusNotFound)
 	ctx.Resp.Write([]byte(`
 <!DOCTYPE html>

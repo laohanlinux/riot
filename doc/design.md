@@ -10,12 +10,10 @@
 - `curl -v -XPOST "http://localhost:8080/riot/bucket" -d 'bucketName'`
 
 ``` http
-curl -v -XPOST "http://localhost:8080/riot/bucket" -d 'student'
-*   Trying 127.0.0.1...
-* Connected to localhost (127.0.0.1) port 8080 (#0)
+# curl -v -XPOST "http://localhost:8080/riot/bucket" -d 'student'
 > POST /riot/bucket HTTP/1.1
 > Host: localhost:8080
-> User-Agent: curl/7.43.0
+> User-Agent: curl/7.51.0
 > Accept: */*
 > Content-Length: 7
 > Content-Type: application/x-www-form-urlencoded
@@ -23,10 +21,10 @@ curl -v -XPOST "http://localhost:8080/riot/bucket" -d 'student'
 * upload completely sent off: 7 out of 7 bytes
 < HTTP/1.1 200 OK
 < Content-Type: application/json
-< Date: Sun, 03 Jul 2016 15:32:19 GMT
-< Content-Length: 0
+< Date: Fri, 05 May 2017 10:35:48 GMT
+< Content-Length: 10
 <
-* Connection #0 to host localhost left intact
+{"ret":0}
 ```
 
 ### delete a bucket
@@ -34,20 +32,18 @@ curl -v -XPOST "http://localhost:8080/riot/bucket" -d 'student'
 `curl -v -DELETE "http://localhost:8080/riot/bucket" -d 'bucketName'`
 
 ``` http
-curl -v -XDELETE "http://localhost:8080/riot/bucket/student"
-*   Trying 127.0.0.1...
-* Connected to localhost (127.0.0.1) port 8080 (#0)
+# curl -v -XDELETE "http://localhost:8080/riot/bucket/student"
 > DELETE /riot/bucket/student HTTP/1.1
 > Host: localhost:8080
-> User-Agent: curl/7.43.0
+> User-Agent: curl/7.51.0
 > Accept: */*
 >
 < HTTP/1.1 200 OK
 < Content-Type: application/json
-< Date: Sun, 03 Jul 2016 15:32:43 GMT
-< Content-Length: 0
+< Date: Fri, 05 May 2017 10:36:42 GMT
+< Content-Length: 10
 <
-* Connection #0 to host localhost left intact
+{"ret":0}
 ```
 
 ### get bucket info
@@ -55,33 +51,33 @@ curl -v -XDELETE "http://localhost:8080/riot/bucket/student"
 - `curl -v "http://localhost:8080/riot/bucekt" -d 'bucketName'`
 
 ``` http
-curl -v "http://localhost:8080/riot/bucket/student"
-* Connected to localhost (127.0.0.1) port 8080 (#0)
+# curl -v "http://localhost:8080/riot/bucket/student"
 > GET /riot/bucket/student HTTP/1.1
 > Host: localhost:8080
-> User-Agent: curl/7.43.0
+> User-Agent: curl/7.51.0
 > Accept: */*
 >
 < HTTP/1.1 200 OK
 < Content-Type: application/json
-< Date: Sun, 03 Jul 2016 15:33:30 GMT
-< Content-Length: 201
-<
-* Connection #0 to host localhost left intact
+< Date: Fri, 05 May 2017 10:37:24 GMT
+< Content-Length: 219
 {
-  "BranchPageN": 0,
-  "BranchOverflowN": 0,
-  "LeafPageN": 0,
-  "LeafOverflowN": 0,
-  "KeyN": 0,
-  "Depth": 1,
-  "BranchAlloc": 0,
-  "BranchInuse": 0,
-  "LeafAlloc": 0,
-  "LeafInuse": 0,
-  "BucketN": 1,
-  "InlineBucketN": 1,
-  "InlineBucketInuse": 16
+  "data": {
+    "BranchPageN": 0,
+    "BranchOverflowN": 0,
+    "LeafPageN": 0,
+    "LeafOverflowN": 0,
+    "KeyN": 0,
+    "Depth": 1,
+    "BranchAlloc": 0,
+    "BranchInuse": 0,
+    "LeafAlloc": 0,
+    "LeafInuse": 0,
+    "BucketN": 1,
+    "InlineBucketN": 1,
+    "InlineBucketInuse": 16
+  },
+  "ret": 0
 }
 ```
 
@@ -163,24 +159,20 @@ be sure to exist the bucket.
 - `curl -v -XPOST "http://localhost:8080/riot/bucekt/{bucketName}/key/{key}" -d 'value'`
 
 ``` http
-curl -v -XPOST "http://localhost:8080/riot/bucket/student/key/lusi" -d '{"Age":100}'
-
-*   Trying 127.0.0.1...
-* Connected to localhost (127.0.0.1) port 8080 (#0)
+$ curl -v -XPOST "http://localhost:8080/riot/bucket/student/key/lusi" -d '{"Age":100}'
 > POST /riot/bucket/student/key/lusi HTTP/1.1
 > Host: localhost:8080
-> User-Agent: curl/7.43.0
+> User-Agent: curl/7.51.0
 > Accept: */*
 > Content-Length: 11
 > Content-Type: application/x-www-form-urlencoded
-> 
+>
 * upload completely sent off: 11 out of 11 bytes
 < HTTP/1.1 200 OK
 < Content-Type: application/json
-< Date: Sun, 03 Jul 2016 15:45:54 GMT
-< Content-Length: 0
-< 
-* Connection #0 to host localhost left intact
+< Date: Fri, 05 May 2017 10:39:44 GMT
+< Content-Length: 10
+{"ret":0}
 ```
 
 ### delete value by key

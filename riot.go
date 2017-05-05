@@ -14,23 +14,22 @@ import (
 	"github.com/laohanlinux/riot/cluster"
 	"github.com/laohanlinux/riot/config"
 	"github.com/laohanlinux/riot/platform"
-	"github.com/laohanlinux/utils/netrpc"
 
 	"github.com/hashicorp/raft"
-	"github.com/laohanlinux/go-logger/logger"
+	log "github.com/laohanlinux/utils/gokitlog"
+	"github.com/laohanlinux/utils/netrpc"
 )
 
 func main() {
 	var (
-		cfgPath, joinAddr string
-		err               error
-		data              []byte
-		cfg               *config.Configure
-		rc                = raft.DefaultConfig()
-		c                 *cluster.Cluster
+		cfgPath string
+		err     error
+		data    []byte
+		cfg     *config.Configure
+		rc      = raft.DefaultConfig()
+		c       *cluster.Cluster
 	)
 	flag.StringVar(&cfgPath, "c", "", "configure path")
-	flag.StringVar(&joinAddr, "join", "", "host:port of leader to join")
 	flag.Parse()
 	var action = flag.Arg(0)
 
@@ -77,7 +76,7 @@ func main() {
 		srv := netrpc.NewServer()
 		srv.Register(service)
 		srv.Register(&netrpc.HealthCheck{})
-		logger.Info("Start rpc server successfully")
+		log.Info("Start rpc server successfully")
 		srv.Accept(l)
 	}()
 

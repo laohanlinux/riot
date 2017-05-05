@@ -9,8 +9,10 @@ import (
 	"github.com/laohanlinux/utils/pool/rpc"
 )
 
-var DefaultLeaderRPC *LeaderRPC
-var DefaultRaftRPC *rpc.NetRPCRing
+var (
+	DefaultLeaderRPC *LeaderRPC
+	DefaultRaftRPC   *rpc.NetRPCRing
+)
 
 const (
 	APIService             = "APIService"
@@ -22,19 +24,20 @@ const (
 	APIServiceCreateBucket = APIService + "." + "CreateBucket"
 
 	APIServiceState      = APIService + "." + "NodeState"
+	APIServiceNodeString = APIService + "." + "NodeString"
 	APIServicePeers      = APIService + "." + "Peers"
 	APIServiceLeader     = APIService + "." + "Leader"
 	APIServiceSnapshot   = APIService + "." + "Snapshot"
-	APIServiceRemovePeer = APIServicePeers + "." + "RemovePeer"
+	APIServiceRemovePeer = APIService + "." + "RemovePeer"
 )
 
-func KV(bucketName, key string, qs bool) (value []byte, has bool, err error) {
+func KV(bucketName, key string, qs int) (value []byte, has bool, err error) {
 	var (
 		arg   = api.GetKVArg{BucketName: bucketName, Key: key}
 		reply api.GetKVReply
 	)
 
-	if qs {
+	if qs == 1 {
 		err = DefaultLeaderRPC.Call(APIServiceKV, &arg, &reply)
 	} else {
 		err = DefaultRaftRPC.Call(APIServiceKV, &arg, &reply)
@@ -96,6 +99,24 @@ func CreateBucket(bucketName string) (err error) {
 	return
 }
 
+func States() ([]string, error) {
+	var (
+		arg   api.NotArg
+		reply api.NodeString
+		idx   = DefaultRaftRPC.Size()
+		res   []string
+		err   error
+	)
+	for ; idx > 0; idx-- {
+		if err = DefaultRaftRPC.Call(APIServiceNodeString, &arg, &reply); err != nil {
+			return nil, err
+		}
+		res = append(res, reply.NodeInfo)
+	}
+
+	return res, nil
+}
+
 func Peers() (peers []string, err error) {
 	var (
 		arg   api.NotArg
@@ -132,20 +153,38 @@ func Snapshot() (snaLen int, err error) {
 
 func RemovePeer(peer string) (err error) {
 	var (
-		arg   api.RemovePeerArg
-		reply api.NotReply
+		arg   = api.RemovePeerArg{Peer: peer}
+		reply api.RemovePeerReply
 	)
 	err = DefaultLeaderRPC.Call(APIServiceRemovePeer, &arg, &reply)
 	return
 }
 
 func InitRPC(nodeAddrs []string, poolSize int) error {
-	var err error
-	if err = initRPC(nodeAddrs, poolSize); err != nil {
-		return err
-	}
-	if err = initLeaderRPC(nodeAddrs, poolSize); err != nil {
-		return err
+	var (
+		err     error
+		errChan = make(chan error)
+		success int
+	)
+	go func() {
+		errChan <- initRPC(nodeAddrs, poolSize)
+	}()
+	go func() {
+		errChan <- initLeaderRPC(nodeAddrs, poolSize)
+	}()
+	for {
+		select {
+		case <-time.After(time.Second * 3):
+			panic("rpc init timeout")
+		case err = <-errChan:
+			if err != nil {
+				return err
+			}
+			success++
+			if success == 2 {
+				return nil
+			}
+		}
 	}
 	return nil
 }

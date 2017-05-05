@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/BurntSushi/toml"
+	log "github.com/laohanlinux/utils/gokitlog"
 )
 
 type ServerConfig struct {
@@ -54,8 +55,9 @@ func (rc RaftConfig) AddrString() string {
 }
 
 type LogConfig struct {
-	LogDir  string `toml:"log_dir"`
-	LogName string `toml:"log_name"`
+	LogDir   string `toml:"log_dir"`
+	LogName  string `toml:"log_name"`
+	LogLevel string `toml:"log_level"`
 }
 
 type Configure struct {
@@ -101,7 +103,18 @@ func NewConfig(data string) (*Configure, error) {
 			}
 		}
 	}
+	initLog()
 	return c, nil
+}
+
+func initLog() {
+	var opt = log.LogOption{
+		SegmentationThreshold: 60,
+		LogName:               c.LogC.LogName,
+		LogDir:                c.LogC.LogDir,
+		LogLevel:              c.LogC.LogLevel,
+	}
+	log.SetGlobalLog(opt)
 }
 
 func GetConfigure() *Configure {

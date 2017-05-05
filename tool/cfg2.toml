@@ -27,3 +27,4 @@ port = "32125"
 
 log_dir = "raft2/logs"
 log_name = "raft_access_log"
+log_level = "debug"

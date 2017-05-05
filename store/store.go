@@ -2,8 +2,6 @@ package store
 
 import (
 	"errors"
-
-	"github.com/laohanlinux/go-logger/logger"
 )
 
 // ErrFinished indicates all data restore
@@ -43,7 +41,7 @@ func NewRiotStoreFactory(storeBackend, storePath string) RiotStorage {
 	case BoltDBStoreBackend:
 		return NewBoltdbStore(storePath)
 	default:
-		logger.Fatal("unkown the store backend:", storeBackend)
+		panic("unkown the store backend:" + storeBackend)
 	}
 	return nil
 }
