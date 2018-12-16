@@ -1,6 +1,6 @@
 # riot
 
-<center>![](https://github.com/laohanlinux/riot/blob/master/doc/riot.jpg)</center>
+![](https://github.com/laohanlinux/riot/blob/master/doc/riot.jpg)
 
 Riot is a distributed key/value system basing raft algorithm, leveldb、 boltdb and bitCask(in fucture) backend store!!!
 
